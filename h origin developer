@@ -1,0 +1,19 @@
+[33mcommit 8d1b88f130465168c075a8af07acbe768c35575e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdeveloper[m[33m)[m
+Author: Sbedoyar <santiago.bedoya29@correo.tdea.edu.co>
+Date:   Tue Sep 1 15:39:34 2026 -0500
+
+    feat: implementar flujo de autenticación y página principal en React
+    
+    Migra las interfaces originales de autenticación y página principal desde HTML y JavaScript estático hacia componentes reutilizables en React.
+    
+    Agrega los componentes Login, Register y Recover con validaciones de formularios, controles de visibilidad de contraseña, navegación entre pantallas de autenticación y estilos responsivos.
+    
+    Conecta el frontend en React con el backend en Node.js y Express mediante authService, incluyendo inicio de sesión, registro de usuarios y solicitudes de recuperación de contraseña.
+    
+    Agrega los endpoints del backend para registro de usuarios y recuperación de contraseña, integrando el flujo de autenticación con SQL Server y persistiendo los nuevos usuarios en las tablas Usuario, Cliente y Login.
+    
+    Agrega el registro de solicitudes de recuperación de contraseña con manejo de fecha de expiración en la tabla RecuperacionClave.
+    
+    Implementa la página principal en React con Header, Hero, tarjetas de partidos, filtros, buscador, cupón de apuestas, versión móvil del cupón, notificaciones tipo toast, cierre de sesión y componentes responsivos.
+    
+    Los partidos y cuotas continúan temporalmente definidos de forma local en el frontend; queda pendiente cargarlos desde SQL Server mediante el backend.
