@@ -1,36 +1,58 @@
 const express = require('express')
 const cors = require('cors')
-const mongoRoutes = require('./routes/mongoRoutes')
-const firebirdRoutes = require('./routes/firebirdRoutes')
 
-const mysqlRoutes = require('./routes/mysqlRoutes')
+// RUTAS
 const sqlServerRoutes = require('./routes/sqlServerRoutes')
-const { connectMongo } = require('./databases/mongoDatabase')
+const mysqlRoutes = require('./routes/mysqlRoutes')
+const mongoRoutes = require('./routes/mongoRoutes')
+const firebaseRoutes = require('./routes/firebaseRoutes')
+const postgresRoutes = require('./routes/postgresRoutes')
+
+// CONEXIONES
+const {
+    connectMongo
+} = require('./databases/mongoDatabase')
+
+const {
+    testPostgresConnection
+} = require('./databases/postgresDatabase')
 
 
 const app = express()
+
+
+// =====================================
+// MIDDLEWARES
+// =====================================
 
 app.use(cors())
 app.use(express.json())
 
 
-// RUTAS MYSQL
-app.use('/api/mysql', mysqlRoutes)
+// =====================================
+// RUTAS
+// =====================================
 
-
-// RUTAS SQL SERVER
+// SQL SERVER
 app.use('/api', sqlServerRoutes)
 
+// MYSQL
+app.use('/api/mysql', mysqlRoutes)
 
-// RUTAS MONGO
+// MONGODB
 app.use('/api/mongo', mongoRoutes)
 
+// FIREBASE / FIRESTORE
+app.use('/api/firebase', firebaseRoutes)
 
-// RUTAS FIREBIRD
-app.use('/api/firebird', firebirdRoutes)
+// POSTGRESQL
+app.use('/api/postgres', postgresRoutes)
 
 
+// =====================================
 // PRUEBA DEL BACKEND
+// =====================================
+
 app.get('/api/health', (req, res) => {
     res.json({
         message: 'Backend funcionando'
@@ -38,11 +60,20 @@ app.get('/api/health', (req, res) => {
 })
 
 
+// =====================================
+// INICIAR SERVIDOR
+// =====================================
+
 const PORT = process.env.PORT || 5000
 
 async function iniciarServidor() {
     try {
+
+        // Conectar MongoDB
         await connectMongo()
+
+        // Probar conexión PostgreSQL
+        await testPostgresConnection()
 
         app.listen(PORT, () => {
             console.log(
@@ -52,7 +83,7 @@ async function iniciarServidor() {
 
     } catch (error) {
         console.error(
-            'Error conectando a MongoDB:',
+            'Error iniciando el backend:',
             error
         )
     }
