@@ -1,157 +1,363 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
 import MatchCard from './MatchCard'
 import BetSlip from './BetSlip'
 import MobileBetSlip from './MobileBetSlip'
 
-const MATCHES = [
-  {
-    id: 'p1',
-    league: 'liga',
-    leagueName: 'Liga BetPlay',
-    home: 'Atlético Nacional',
-    away: 'Millonarios F. C.',
-    homeCode: 'NAL',
-    awayCode: 'MIL',
-    day: 'today',
-    status: 'scheduled',
-    time: '20:10',
-    odds: {
-      home: 2.05,
-      draw: 3.25,
-      away: 3.60,
-    },
-    markets: [
-      '+2.5 goles',
-      'Ambos marcan',
-      'Doble oportunidad',
-      '+8.5 córners',
-      '+3.5 tarjetas',
-    ],
-  },
-  {
-    id: 'p2',
-    league: 'liga',
-    leagueName: 'Liga BetPlay',
-    home: 'Junior F. C.',
-    away: 'América de Cali',
-    homeCode: 'JUN',
-    awayCode: 'AME',
-    day: 'today',
-    status: 'live',
-    time: "63'",
-    score: '1 - 1',
-    odds: {
-      home: 2.40,
-      draw: 2.85,
-      away: 3.15,
-    },
-    markets: [
-      'Próximo gol',
-      'Ambos marcan',
-      '+2.5 goles',
-      '+9.5 córners',
-      'Resultado final',
-    ],
-  },
-  {
-    id: 'p3',
-    league: 'liga',
-    leagueName: 'Liga BetPlay',
-    home: 'Independiente Santa Fe',
-    away: 'Deportes Tolima',
-    homeCode: 'SFE',
-    awayCode: 'TOL',
-    day: 'upcoming',
-    status: 'scheduled',
-    time: 'Mañana · 18:30',
-    odds: {
-      home: 1.95,
-      draw: 3.20,
-      away: 3.95,
-    },
-    markets: [
-      '-2.5 goles',
-      'Ambos marcan',
-      'Doble oportunidad',
-      '+7.5 córners',
-      '+4.5 tarjetas',
-    ],
-  },
-  {
-    id: 'p4',
-    league: 'copa',
-    leagueName: 'Copa BetPlay',
-    home: 'Once Caldas',
-    away: 'Independiente Medellín',
-    homeCode: 'ONC',
-    awayCode: 'DIM',
-    day: 'upcoming',
-    status: 'scheduled',
-    time: 'Sáb · 16:00',
-    odds: {
-      home: 2.30,
-      draw: 3.05,
-      away: 3.05,
-    },
-    markets: [
-      '+1.5 goles',
-      'Ambos marcan',
-      'Doble oportunidad',
-      '+8.5 córners',
-      'Primer goleador',
-    ],
-  },
-  {
-    id: 'p5',
-    league: 'copa',
-    leagueName: 'Copa BetPlay',
-    home: 'Deportivo Cali',
-    away: 'La Equidad',
-    homeCode: 'CAL',
-    awayCode: 'EQU',
-    day: 'upcoming',
-    status: 'scheduled',
-    time: 'Dom · 19:20',
-    odds: {
-      home: 2.15,
-      draw: 3.10,
-      away: 3.35,
-    },
-    markets: [
-      '+2.5 goles',
-      'Ambos marcan',
-      'Doble oportunidad',
-      '+10.5 córners',
-      '+3.5 tarjetas',
-    ],
-  },
-]
+import {
+  obtenerPartidos,
+  obtenerPartidoDetalle,
+  realizarApuesta,
+} from '../../services/authService'
 
 function MatchesSection({
   search,
   onClearSearch,
   onNotify,
+  onSaldoActualizado,
 }) {
+  const [matches, setMatches] = useState([])
+  const [apostando, setApostando] = useState(false)
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+
   const [picks, setPicks] = useState({})
   const [stake, setStake] = useState(0)
 
   const [league, setLeague] = useState('all')
-  const [timeFilter, setTimeFilter] = useState('all')
+  const [timeFilter, setTimeFilter] =
+    useState('all')
+
   const [sort, setSort] = useState('time')
 
-  const handlePick = (matchId, outcome) => {
-    const match = MATCHES.find(
-      (item) => item.id === matchId
-    )
+  // ============================================================
+  // JORNADA SELECCIONADA
+  // ============================================================
 
-    if (!match) return
+  const [jornadaSeleccionada, setJornadaSeleccionada] =
+    useState(1)
+
+
+  // ============================================================
+  // FORMATEAR FECHA DEL PARTIDO
+  // ============================================================
+
+  const formatearFechaPartido = (fecha) => {
+    if (!fecha) {
+      return ''
+    }
+
+    const fechaPartido =
+      new Date(fecha)
+
+    return new Intl.DateTimeFormat(
+      'es-CO',
+      {
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'America/Bogota',
+      }
+    ).format(fechaPartido)
+  }
+
+
+  // ============================================================
+  // OBTENER FECHA COLOMBIA
+  // ============================================================
+
+  const obtenerFechaColombia = (fecha) => {
+    return new Intl.DateTimeFormat(
+      'en-CA',
+      {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'America/Bogota',
+      }
+    ).format(fecha)
+  }
+
+
+  // ============================================================
+  // DETERMINAR SI EL PARTIDO ES HOY O PRÓXIMO
+  // ============================================================
+
+  const obtenerDiaPartido = (fecha) => {
+    if (!fecha) {
+      return 'upcoming'
+    }
+
+    const hoy =
+      obtenerFechaColombia(
+        new Date()
+      )
+
+    const fechaPartido =
+      obtenerFechaColombia(
+        new Date(fecha)
+      )
+
+    if (fechaPartido === hoy) {
+      return 'today'
+    }
+
+    return 'upcoming'
+  }
+
+
+  // ============================================================
+  // CARGAR PARTIDOS DE LA JORNADA SELECCIONADA
+  // ============================================================
+
+  useEffect(() => {
+    let activo = true
+
+    const cargarPartidos = async () => {
+      try {
+        setCargando(true)
+        setError('')
+
+        const respuesta =
+          await obtenerPartidos(
+            jornadaSeleccionada
+          )
+
+        const partidosBase =
+          respuesta.datos || []
+
+
+        // ======================================================
+        // CONSULTAR DETALLE Y CUOTAS DE LOS 10 PARTIDOS
+        // ======================================================
+
+        const respuestasDetalle =
+          await Promise.all(
+            partidosBase.map(
+              (partido) =>
+                obtenerPartidoDetalle(
+                  partido.partidoid
+                )
+            )
+          )
+
+
+        // ======================================================
+        // ADAPTAR API AL FORMATO DE MATCHCARD
+        // ======================================================
+
+        const partidosAdaptados =
+          respuestasDetalle.map(
+            (respuestaDetalle) => {
+              const partido =
+                respuestaDetalle.datos
+
+              const opciones =
+                partido.opcionesApuesta || []
+
+
+              const ganadorLocal =
+                opciones.find(
+                  (opcion) =>
+                    opcion.reglaid === 1
+                )
+
+              const empate =
+                opciones.find(
+                  (opcion) =>
+                    opcion.reglaid === 2
+                )
+
+              const ganadorVisitante =
+                opciones.find(
+                  (opcion) =>
+                    opcion.reglaid === 3
+                )
+
+
+              const markets =
+                opciones
+                  .filter(
+                    (opcion) =>
+                      ![1, 2, 3].includes(
+                        opcion.reglaid
+                      )
+                  )
+                  .map(
+                    (opcion) =>
+                      opcion.opcionapuesta
+                  )
+
+
+              let status = 'scheduled'
+
+              if (
+                partido.estadopartido ===
+                'EN_CURSO'
+              ) {
+                status = 'live'
+              }
+
+              if (
+                partido.estadopartido ===
+                'FINALIZADO'
+              ) {
+                status = 'finished'
+              }
+
+
+              return {
+                id: partido.partidoid,
+
+                codigo:
+                  partido.codigopartido,
+
+                jornada:
+                  partido.numerojornada,
+
+                league: 'liga',
+
+                leagueName:
+                  'Liga BetPlay',
+
+                home:
+                  partido.equipolocal,
+
+                away:
+                  partido.equipovisitante,
+
+                homeCode:
+                  partido.siglalocal,
+
+                awayCode:
+                  partido.siglavisitante,
+
+                day:
+                  obtenerDiaPartido(
+                    partido.fechahorainicio
+                  ),
+
+                status,
+
+                time:
+                  formatearFechaPartido(
+                    partido.fechahorainicio
+                  ),
+
+                fechaHoraInicio:
+                  partido.fechahorainicio,
+
+                stadium:
+                  partido.estadio,
+
+                score:
+                  partido.goleslocal !== null &&
+                  partido.golesvisitante !== null
+                    ? `${partido.goleslocal} - ${partido.golesvisitante}`
+                    : null,
+
+                odds: {
+                  home:
+                    Number(
+                      ganadorLocal?.cuota || 0
+                    ),
+
+                  draw:
+                    Number(
+                      empate?.cuota || 0
+                    ),
+
+                  away:
+                    Number(
+                      ganadorVisitante?.cuota || 0
+                    ),
+                },
+
+                optionIds: {
+                  home:
+                    ganadorLocal
+                      ?.partidoreglaid,
+
+                  draw:
+                    empate
+                      ?.partidoreglaid,
+
+                  away:
+                    ganadorVisitante
+                      ?.partidoreglaid,
+                },
+
+                markets,
+              }
+            }
+          )
+
+
+        if (activo) {
+          setMatches(
+            partidosAdaptados
+          )
+        }
+
+      } catch (error) {
+        console.error(
+          'Error cargando partidos:',
+          error
+        )
+
+        if (activo) {
+          setError(
+            error.message ||
+              'No fue posible cargar los partidos.'
+          )
+        }
+
+      } finally {
+        if (activo) {
+          setCargando(false)
+        }
+      }
+    }
+
+
+    cargarPartidos()
+
+
+    return () => {
+      activo = false
+    }
+
+  }, [jornadaSeleccionada])
+
+
+  // ============================================================
+  // SELECCIONAR CUOTA
+  // ============================================================
+
+  const handlePick = (
+    matchId,
+    outcome
+  ) => {
+    const match =
+      matches.find(
+        (item) =>
+          item.id === matchId
+      )
+
+    if (!match) {
+      return
+    }
+
 
     setPicks((prevPicks) => {
-      const currentPick = prevPicks[matchId]
+      const currentPick =
+        prevPicks[matchId]
 
-      // Si toca nuevamente la misma cuota,
-      // se elimina del cupón.
-      if (currentPick?.outcome === outcome) {
+
+      if (
+        currentPick?.outcome === outcome
+      ) {
         const nuevosPicks = {
           ...prevPicks,
         }
@@ -161,27 +367,51 @@ function MatchesSection({
         return nuevosPicks
       }
 
+
       const labels = {
-        home: `Gana ${match.home}`,
-        draw: 'Empate',
-        away: `Gana ${match.away}`,
+        home:
+          `Gana ${match.home}`,
+
+        draw:
+          'Empate',
+
+        away:
+          `Gana ${match.away}`,
       }
+
 
       return {
         ...prevPicks,
 
         [matchId]: {
           matchId,
+
+          partidoReglaId:
+            match.optionIds[outcome],
+
           outcome,
-          match: `${match.home} vs ${match.away}`,
-          label: labels[outcome],
-          odd: match.odds[outcome],
+
+          match:
+            `${match.home} vs ${match.away}`,
+
+          label:
+            labels[outcome],
+
+          odd:
+            match.odds[outcome],
         },
       }
     })
   }
 
-  const handleRemovePick = (matchId) => {
+
+  // ============================================================
+  // QUITAR SELECCIÓN
+  // ============================================================
+
+  const handleRemovePick = (
+    matchId
+  ) => {
     setPicks((prevPicks) => {
       const nuevosPicks = {
         ...prevPicks,
@@ -193,16 +423,54 @@ function MatchesSection({
     })
   }
 
-  const handleStakeChange = (value) => {
-    const nuevoValor = Math.max(
-      0,
-      Number(value) || 0
-    )
 
-    setStake(nuevoValor)
+  // ============================================================
+  // CAMBIAR VALOR DE APUESTA
+  // ============================================================
+
+  const handleStakeChange = (
+    value
+  ) => {
+    const nuevoValor =
+      Math.max(
+        0,
+        Number(value) || 0
+      )
+
+    setStake(
+      nuevoValor
+    )
   }
 
-  const handlePlaceBet = () => {
+
+  // ============================================================
+  // REALIZAR APUESTA
+  // TODAVÍA SIMULADA
+  // ============================================================
+
+  // ============================================================
+// REALIZAR APUESTA REAL EN MYSQL
+// ============================================================
+
+  const handlePlaceBet = async () => {
+    if (apostando) {
+      return false
+    }
+
+
+    const selecciones =
+      Object.values(picks)
+
+
+    if (selecciones.length === 0) {
+      onNotify?.(
+        'Selecciona al menos una cuota.'
+      )
+
+      return false
+    }
+
+
     if (stake < 1000) {
       onNotify?.(
         'Ingresa un valor mínimo de $1.000 para continuar.'
@@ -211,90 +479,188 @@ function MatchesSection({
       return false
     }
 
-    onNotify?.(
-      'Apuesta simulada correctamente. No se realizó ningún cobro real.'
-    )
 
-    setPicks({})
-    setStake(0)
+    const partidoReglaIds =
+      selecciones.map(
+        (pick) =>
+          pick.partidoReglaId
+      )
 
-    return true
-  }
 
-  const filteredMatches = MATCHES
-    .filter((match) => {
-      const query = search
-        ?.trim()
-        .toLowerCase()
+    if (
+      partidoReglaIds.some(
+        (id) => !id
+      )
+    ) {
+      onNotify?.(
+        'Una de las selecciones no es válida.'
+      )
 
-      if (query) {
-        const textoPartido = `
-          ${match.home}
-          ${match.away}
-          ${match.leagueName}
-        `.toLowerCase()
+      return false
+    }
 
-        if (!textoPartido.includes(query)) {
-          return false
-        }
-      }
 
-      if (
-        league !== 'all' &&
-        match.league !== league
-      ) {
-        return false
-      }
+    try {
+      setApostando(true)
 
-      if (
-        timeFilter === 'today' &&
-        match.day !== 'today'
-      ) {
-        return false
-      }
 
-      if (
-        timeFilter === 'live' &&
-        match.status !== 'live'
-      ) {
-        return false
-      }
+      const respuesta =
+        await realizarApuesta(
+          stake,
+          partidoReglaIds
+        )
 
-      if (
-        timeFilter === 'upcoming' &&
-        match.day !== 'upcoming'
-      ) {
-        return false
-      }
+        onSaldoActualizado?.(
+          respuesta.datos
+            .saldoDisponible
+        )
+
+
+      onNotify?.(
+        `${respuesta.datos.codigoApuesta} realizada correctamente. Saldo disponible: $${Number(
+          respuesta.datos.saldoDisponible
+        ).toLocaleString('es-CO')}`
+      )
+
+
+      setPicks({})
+      setStake(0)
+
 
       return true
-    })
-    .sort((a, b) => {
-      if (sort === 'highest') {
-        const mayorA = Math.max(
-          a.odds.home,
-          a.odds.draw,
-          a.odds.away
+
+    } catch (error) {
+      console.error(
+        'Error realizando apuesta:',
+        error
+      )
+
+
+      onNotify?.(
+        error.message ||
+          'No fue posible realizar la apuesta.'
+      )
+
+
+      return false
+
+    } finally {
+      setApostando(false)
+    }
+  }
+
+
+  // ============================================================
+  // FILTROS
+  // ============================================================
+
+  const filteredMatches =
+    matches
+      .filter((match) => {
+        const query =
+          search
+            ?.trim()
+            .toLowerCase()
+
+
+        if (query) {
+          const textoPartido = `
+            ${match.home}
+            ${match.away}
+            ${match.leagueName}
+          `.toLowerCase()
+
+          if (
+            !textoPartido.includes(
+              query
+            )
+          ) {
+            return false
+          }
+        }
+
+
+        if (
+          league !== 'all' &&
+          match.league !== league
+        ) {
+          return false
+        }
+
+
+        if (
+          timeFilter === 'today' &&
+          match.day !== 'today'
+        ) {
+          return false
+        }
+
+
+        if (
+          timeFilter === 'live' &&
+          match.status !== 'live'
+        ) {
+          return false
+        }
+
+
+        if (
+          timeFilter === 'upcoming' &&
+          match.day !== 'upcoming'
+        ) {
+          return false
+        }
+
+
+        return true
+      })
+      .sort((a, b) => {
+        if (sort === 'highest') {
+          const mayorA =
+            Math.max(
+              a.odds.home,
+              a.odds.draw,
+              a.odds.away
+            )
+
+          const mayorB =
+            Math.max(
+              b.odds.home,
+              b.odds.draw,
+              b.odds.away
+            )
+
+          return mayorB - mayorA
+        }
+
+
+        return (
+          new Date(
+            a.fechaHoraInicio
+          ) -
+          new Date(
+            b.fechaHoraInicio
+          )
         )
+      })
 
-        const mayorB = Math.max(
-          b.odds.home,
-          b.odds.draw,
-          b.odds.away
-        )
 
-        return mayorB - mayorA
-      }
-
-      return 0
-    })
+  // ============================================================
+  // LIMPIAR FILTROS
+  // ============================================================
 
   const limpiarFiltros = () => {
     setLeague('all')
     setTimeFilter('all')
     setSort('time')
+
     onClearSearch?.()
   }
+
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
     <section
@@ -307,6 +673,7 @@ function MatchesSection({
           <div>
             <span className="eyebrow">
               <i></i>
+
               FÚTBOL NACIONAL
             </span>
 
@@ -319,7 +686,12 @@ function MatchesSection({
             </p>
           </div>
 
-          <span className="date-label">
+
+          {/* ===================================================
+              SELECTOR DE JORNADAS
+             =================================================== */}
+
+          <label className="date-label jornada-selector">
             <svg
               viewBox="0 0 24 24"
               aria-hidden="true"
@@ -335,9 +707,33 @@ function MatchesSection({
               <path d="M16 3v4M8 3v4M3 11h18" />
             </svg>
 
-            Hoy, 13 ago
-          </span>
+            <select
+              value={jornadaSeleccionada}
+              onChange={(event) =>
+                setJornadaSeleccionada(
+                  Number(
+                    event.target.value
+                  )
+                )
+              }
+            >
+              {Array.from(
+                { length: 19 },
+                (_, index) =>
+                  index + 1
+              ).map((jornada) => (
+                <option
+                  key={jornada}
+                  value={jornada}
+                >
+                  Jornada {jornada}
+                </option>
+              ))}
+            </select>
+          </label>
+
         </header>
+
 
         <div className="filters-panel">
 
@@ -357,7 +753,9 @@ function MatchesSection({
               <select
                 value={league}
                 onChange={(event) =>
-                  setLeague(event.target.value)
+                  setLeague(
+                    event.target.value
+                  )
                 }
               >
                 <option value="all">
@@ -367,13 +765,10 @@ function MatchesSection({
                 <option value="liga">
                   Liga BetPlay
                 </option>
-
-                <option value="copa">
-                  Copa BetPlay
-                </option>
               </select>
             </span>
           </label>
+
 
           <div
             className="filter-chips"
@@ -394,6 +789,7 @@ function MatchesSection({
               Todos
             </button>
 
+
             <button
               className={
                 timeFilter === 'today'
@@ -408,6 +804,7 @@ function MatchesSection({
               Hoy
             </button>
 
+
             <button
               className={
                 timeFilter === 'live'
@@ -420,8 +817,10 @@ function MatchesSection({
               }
             >
               <i></i>
+
               En vivo
             </button>
+
 
             <button
               className={
@@ -431,12 +830,15 @@ function MatchesSection({
               }
               type="button"
               onClick={() =>
-                setTimeFilter('upcoming')
+                setTimeFilter(
+                  'upcoming'
+                )
               }
             >
               Próximos
             </button>
           </div>
+
 
           <label className="sort-select">
             <span>
@@ -446,7 +848,9 @@ function MatchesSection({
             <select
               value={sort}
               onChange={(event) =>
-                setSort(event.target.value)
+                setSort(
+                  event.target.value
+                )
               }
             >
               <option value="time">
@@ -461,6 +865,7 @@ function MatchesSection({
 
         </div>
 
+
         <div className="results-row">
           <span>
             {filteredMatches.length}{' '}
@@ -468,6 +873,10 @@ function MatchesSection({
             {filteredMatches.length === 1
               ? 'partido disponible'
               : 'partidos disponibles'}
+
+            {' · '}
+
+            Jornada {jornadaSeleccionada}
           </span>
 
           <button
@@ -478,21 +887,49 @@ function MatchesSection({
           </button>
         </div>
 
+
         <div
           className="match-list"
           aria-live="polite"
         >
-          {filteredMatches.length > 0 ? (
-            filteredMatches.map((match) => (
-              <MatchCard
-                key={match.id}
-                match={match}
-                selectedPick={
-                  picks[match.id]
-                }
-                onPick={handlePick}
-              />
-            ))
+
+          {cargando ? (
+            <div className="empty-results">
+              <strong>
+                Cargando Jornada {jornadaSeleccionada}...
+              </strong>
+
+              <p>
+                Estamos consultando los partidos de ZonaGol.
+              </p>
+            </div>
+
+          ) : error ? (
+            <div className="empty-results">
+              <strong>
+                No pudimos cargar los partidos
+              </strong>
+
+              <p>
+                {error}
+              </p>
+            </div>
+
+          ) : filteredMatches.length > 0 ? (
+
+            filteredMatches.map(
+              (match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedPick={
+                    picks[match.id]
+                  }
+                  onPick={handlePick}
+                />
+              )
+            )
+
           ) : (
             <div className="empty-results">
               <strong>
@@ -500,13 +937,15 @@ function MatchesSection({
               </strong>
 
               <p>
-                Prueba con otra liga, fecha o búsqueda.
+                Prueba con otra fecha o búsqueda.
               </p>
             </div>
           )}
+
         </div>
 
       </div>
+
 
       <aside
         className="slip-slot"
@@ -515,18 +954,31 @@ function MatchesSection({
         <BetSlip
           picks={picks}
           stake={stake}
-          onStakeChange={handleStakeChange}
-          onRemovePick={handleRemovePick}
-          onPlaceBet={handlePlaceBet}
+          onStakeChange={
+            handleStakeChange
+          }
+          onRemovePick={
+            handleRemovePick
+          }
+          onPlaceBet={
+            handlePlaceBet
+          }
         />
       </aside>
+
 
       <MobileBetSlip
         picks={picks}
         stake={stake}
-        onStakeChange={handleStakeChange}
-        onRemovePick={handleRemovePick}
-        onPlaceBet={handlePlaceBet}
+        onStakeChange={
+          handleStakeChange
+        }
+        onRemovePick={
+          handleRemovePick
+        }
+        onPlaceBet={
+          handlePlaceBet
+        }
       />
 
     </section>
