@@ -16,6 +16,8 @@ import {
 } from './services/authService'
 
 
+
+
 function App() {
 
   // ==========================================================
@@ -56,6 +58,11 @@ function App() {
     verificandoSesion,
     setVerificandoSesion,
   ] = useState(true)
+
+  const [
+    registroGooglePendiente,
+    setRegistroGooglePendiente,
+  ] = useState(null)
 
 
   // ==========================================================
@@ -192,6 +199,26 @@ function App() {
     )
   }
 
+  // ==========================================================
+  // INICIAR REGISTRO DESDE GOOGLE
+  //
+  // La credencial de Google queda únicamente
+  // en memoria de React.
+  // ==========================================================
+
+  const handleGoRegisterGoogle = (
+    datosGoogle
+  ) => {
+
+    setRegistroGooglePendiente(
+      datosGoogle
+    )
+
+    setPantalla(
+      'register'
+    )
+}
+
 
   // ==========================================================
   // CERRAR SESIÓN
@@ -225,6 +252,8 @@ function App() {
     setTokenRecuperacion(null)
 
     setPantalla('login')
+
+    setRegistroGooglePendiente(null)
 
 
     window.history.replaceState(
@@ -282,6 +311,10 @@ function App() {
         onRegister={
           handleRegister
         }
+
+          registroGoogle={
+            registroGooglePendiente
+          }
       />
     )
   }
@@ -348,6 +381,9 @@ function App() {
         setPantalla(
           'recover'
         )
+      }
+      onGoRegisterGoogle={
+        handleGoRegisterGoogle
       }
     />
   )

@@ -1,13 +1,50 @@
 import { useState } from 'react'
 
+
 function MatchCard({
   match,
   selectedPick,
   onPick,
 }) {
-  const [expandido, setExpandido] = useState(false)
+  const [expandido, setExpandido] =
+    useState(false)
 
-  const enVivo = match.status === 'live'
+
+  // ============================================================
+  // ESTADOS DEL PARTIDO
+  // ============================================================
+
+  const enVivo =
+    match.status === 'live'
+
+  const finalizado =
+    match.status === 'finished'
+
+
+  // ============================================================
+  // TEXTO DEL ESTADO
+  // ============================================================
+
+  const obtenerTextoEstado = () => {
+    if (finalizado) {
+      return 'Finalizado'
+    }
+
+    if (enVivo) {
+      return 'En vivo'
+    }
+
+    if (match.day === 'today') {
+      return 'Hoy'
+    }
+
+    return 'Próximo'
+  }
+
+
+  // ============================================================
+  // BOTÓN DE CUOTA
+  // ============================================================
 
   const crearBotonCuota = (
     outcome,
@@ -16,6 +53,17 @@ function MatchCard({
   ) => {
     const seleccionado =
       selectedPick?.outcome === outcome
+
+    const cuota =
+      Number(
+        match.odds?.[outcome] || 0
+      )
+
+    const disponible =
+      !finalizado &&
+      cuota > 0 &&
+      match.optionIds?.[outcome]
+
 
     return (
       <button
@@ -26,19 +74,35 @@ function MatchCard({
         }
         type="button"
         aria-pressed={seleccionado}
-        onClick={() => onPick(match.id, outcome)}
+        disabled={!disponible}
+        onClick={() => {
+          if (!disponible) {
+            return
+          }
+
+          onPick(
+            match.id,
+            outcome
+          )
+        }}
       >
         <span>
           {shortLabel}
-          <small>{label}</small>
+
+          <small>
+            {label}
+          </small>
         </span>
 
         <strong>
-          {match.odds[outcome].toFixed(2)}
+          {disponible
+            ? cuota.toFixed(2)
+            : '—'}
         </strong>
       </button>
     )
   }
+
 
   return (
     <article
@@ -48,7 +112,13 @@ function MatchCard({
           : 'match-card'
       }
     >
+
+      {/* ======================================================
+          ENCABEZADO
+         ====================================================== */}
+
       <header className="match-card__top">
+
         <span className="match-card__league">
           <svg
             viewBox="0 0 24 24"
@@ -60,6 +130,7 @@ function MatchCard({
           {match.leagueName}
         </span>
 
+
         <span
           className={
             enVivo
@@ -67,18 +138,26 @@ function MatchCard({
               : 'match-status'
           }
         >
-          {enVivo && <i></i>}
+          {enVivo && (
+            <i></i>
+          )}
 
-          {enVivo
-            ? 'En vivo'
-            : match.day === 'today'
-              ? 'Hoy'
-              : 'Próximo'}
+          {obtenerTextoEstado()}
         </span>
+
       </header>
 
+
+      {/* ======================================================
+          CUERPO
+         ====================================================== */}
+
       <div className="match-card__body">
+
         <div className="match-teams">
+
+          {/* EQUIPO LOCAL */}
+
           <div className="match-team">
             <span className="match-team__badge">
               {match.homeCode}
@@ -88,6 +167,9 @@ function MatchCard({
               {match.home}
             </strong>
           </div>
+
+
+          {/* EQUIPO VISITANTE */}
 
           <div className="match-team">
             <span className="match-team__badge">
@@ -99,81 +181,192 @@ function MatchCard({
             </strong>
           </div>
 
+
+          {/* INFORMACIÓN DEL PARTIDO */}
+
           <div className="match-meta">
+
             <span>
               {enVivo
                 ? `Minuto ${match.time}`
                 : match.time}
             </span>
 
+
             <b>
-              {enVivo
-                ? match.score
-                : '1 · X · 2'}
+              {!finalizado && (
+                <b>
+                  {enVivo
+                    ? match.score
+                    : '1 · X · 2'}
+                </b>
+              )}
             </b>
+
           </div>
+
         </div>
 
-        <div className="odds-grid">
-          {crearBotonCuota(
-            'home',
-            '1',
-            'Gana local'
-          )}
 
-          {crearBotonCuota(
-            'draw',
-            'X',
-            'Empate'
-          )}
+        {/* ====================================================
+            PARTIDO FINALIZADO
+           ==================================================== */}
 
-          {crearBotonCuota(
-            'away',
-            '2',
-            'Gana visitante'
-          )}
-        </div>
-      </div>
+        {finalizado ? (
 
-      <div className="match-card__markets">
-        <div className="market-tags">
-          {match.markets.map((market, index) => (
-            <span
-              key={market}
-              className={
-                index > 2
-                  ? 'market-tag market-tag--extra'
-                  : 'market-tag'
-              }
+          <div className="odds-grid">
+
+            <button
+              className="odd-button"
+              type="button"
+              disabled
             >
-              {market}
+              <span>
+                1
+
+                <small>
+                  Gana local
+                </small>
+              </span>
+
+              <strong>
+                Cerrado
+              </strong>
+            </button>
+
+
+            <button
+              className="odd-button"
+              type="button"
+              disabled
+            >
+              <span>
+                Resultado
+
+                <small>
+                  Marcador final
+                </small>
+              </span>
+
+              <strong>
+                {match.score || '—'}
+              </strong>
+            </button>
+
+
+            <button
+              className="odd-button"
+              type="button"
+              disabled
+            >
+              <span>
+                2
+
+                <small>
+                  Gana visitante
+                </small>
+              </span>
+
+              <strong>
+                Cerrado
+              </strong>
+            </button>
+
+          </div>
+
+        ) : (
+
+          /* ==================================================
+             PARTIDO DISPONIBLE PARA APUESTAS
+             ================================================== */
+
+          <div className="odds-grid">
+
+            {crearBotonCuota(
+              'home',
+              '1',
+              'Gana local'
+            )}
+
+            {crearBotonCuota(
+              'draw',
+              'X',
+              'Empate'
+            )}
+
+            {crearBotonCuota(
+              'away',
+              '2',
+              'Gana visitante'
+            )}
+
+          </div>
+
+        )}
+
+      </div>
+
+
+      {/* ======================================================
+          MERCADOS
+         ====================================================== */}
+
+      {match.markets.length > 0 && (
+
+        <div className="match-card__markets">
+
+          <div className="market-tags">
+
+            {match.markets.map(
+              (market, index) => (
+
+                <span
+                  key={market}
+                  className={
+                    index > 2
+                      ? 'market-tag market-tag--extra'
+                      : 'market-tag'
+                  }
+                >
+                  {market}
+                </span>
+
+              )
+            )}
+
+          </div>
+
+
+          <button
+            type="button"
+            aria-expanded={expandido}
+            onClick={() =>
+              setExpandido(
+                !expandido
+              )
+            }
+          >
+            <span>
+              {expandido
+                ? 'Ver menos'
+                : 'Ver más'}
             </span>
-          ))}
+
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="m8 10 4 4 4-4" />
+            </svg>
+          </button>
+
         </div>
 
-        <button
-          type="button"
-          aria-expanded={expandido}
-          onClick={() =>
-            setExpandido(!expandido)
-          }
-        >
-          <span>
-            {expandido
-              ? 'Ver menos'
-              : 'Ver más'}
-          </span>
+      )}
 
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path d="m8 10 4 4 4-4" />
-          </svg>
-        </button>
-      </div>
     </article>
   )
 }
+
 
 export default MatchCard

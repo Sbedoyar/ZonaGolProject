@@ -78,6 +78,115 @@ export async function iniciarSesion(
 
 
 // ============================================================
+// INICIAR SESIÓN CON GOOGLE
+//
+// Recibe únicamente la credencial temporal entregada por
+// Google Identity Services.
+//
+// Posibles estados devueltos por el backend:
+//
+// AUTENTICADO
+// VINCULACION_REQUERIDA
+// REGISTRO_REQUERIDO
+//
+// Solo se guarda un JWT cuando ZonaGol realmente autentica
+// al usuario.
+// ============================================================
+
+export async function iniciarSesionGoogle(
+  credential
+) {
+  const response = await fetch(
+    `${API_URL}/login/google`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type':
+          'application/json',
+      },
+      body: JSON.stringify({
+        credential,
+      }),
+    }
+  )
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        'Error al iniciar sesión con Google'
+    )
+  }
+
+
+  // ==========================================================
+  // GUARDAR ÚNICAMENTE EL JWT PROPIO DE ZONAGOL
+  //
+  // La credencial de Google NO se almacena.
+  // ==========================================================
+
+  if (
+    data.estado === 'AUTENTICADO' &&
+    data.token
+  ) {
+    guardarToken(
+      data.token
+    )
+  }
+
+
+  return data
+}
+
+// ============================================================
+// VINCULAR GOOGLE A UNA CUENTA ZONAGOL EXISTENTE
+//
+// Requiere:
+// - JWT ZonaGol válido
+// - credential temporal de Google
+//
+// La credential NO se almacena.
+// ============================================================
+
+export async function vincularGoogle(
+  credential
+) {
+  const response =
+    await fetchAutenticado(
+      '/google/vincular',
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+
+        body: JSON.stringify({
+          credential,
+        }),
+      }
+    )
+
+
+  const data =
+    await response.json()
+
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        'Error al vincular la cuenta de Google'
+    )
+  }
+
+
+  return data
+}
+
+
+// ============================================================
 // REGISTRAR USUARIO
 // ============================================================
 
@@ -111,6 +220,67 @@ export async function registrarUsuario(
   // ==========================================================
 
   if (data.token) {
+    guardarToken(
+      data.token
+    )
+  }
+
+
+  return data
+}
+
+// ============================================================
+// REGISTRAR USUARIO CON GOOGLE
+//
+// El backend obtiene el correo y el identificador estable
+// directamente desde la credencial verificada de Google.
+//
+// NO enviamos:
+// - contraseña
+// - rolId
+// - correo editable
+//
+// La credential de Google NO se guarda.
+// ============================================================
+
+export async function registrarUsuarioGoogle(
+  datos
+) {
+  const response = await fetch(
+    `${API_URL}/registro/google`,
+    {
+      method: 'POST',
+
+      headers: {
+        'Content-Type':
+          'application/json',
+      },
+
+      body: JSON.stringify(datos),
+    }
+  )
+
+
+  const data =
+    await response.json()
+
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        'Error al crear la cuenta con Google'
+    )
+  }
+
+
+  // ==========================================================
+  // GUARDAR ÚNICAMENTE EL JWT PROPIO DE ZONAGOL
+  // ==========================================================
+
+  if (
+    data.estado === 'AUTENTICADO' &&
+    data.token
+  ) {
     guardarToken(
       data.token
     )
@@ -201,19 +371,38 @@ export async function restablecerPassword(
 // /postgres/partidos
 // ============================================================
 
+// ============================================================
+// OBTENER PARTIDOS
+//
+// Permite filtrar por temporada y jornada.
+//
+// Ejemplo:
+// /postgres/partidos?temporadaId=2&jornada=1
+// ============================================================
+
 export async function obtenerPartidos(
+  temporadaId = 1,
   jornada = null
 ) {
-  let url =
-    `${API_URL}/postgres/partidos`
+  const params =
+    new URLSearchParams()
+
+  params.set(
+    'temporadaId',
+    temporadaId
+  )
 
   if (jornada !== null) {
-    url +=
-      `?jornada=${encodeURIComponent(jornada)}`
+    params.set(
+      'jornada',
+      jornada
+    )
   }
 
   const response =
-    await fetch(url)
+    await fetch(
+      `${API_URL}/postgres/partidos?${params.toString()}`
+    )
 
   const data =
     await response.json()
@@ -289,6 +478,83 @@ export async function fetchAutenticado(
 }
 
 // ============================================================
+// SINCRONIZAR JORNADA DEPORTIVA DESDE API-FOOTBALL
+//
+// Requiere JWT.
+// El backend permite únicamente:
+// 1 = ADMINISTRADOR
+// 2 = OPERADOR
+// ============================================================
+
+export async function sincronizarJornadaDeportiva({
+  leagueId,
+  season,
+  round,
+  numeroJornada,
+}) {
+  const response =
+    await fetchAutenticado(
+      '/sports-sync/jornada',
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+
+        body: JSON.stringify({
+          leagueId,
+          season,
+          round,
+          numeroJornada,
+        }),
+      }
+    )
+
+  const data =
+    await response.json()
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        'No fue posible sincronizar la jornada'
+    )
+  }
+
+  return data
+}
+
+// ============================================================
+// CONSULTAR ESTADO DE SINCRONIZACIÓN DEPORTIVA
+//
+// Requiere JWT.
+// Disponible para:
+// 1 = ADMINISTRADOR
+// 2 = OPERADOR
+// ============================================================
+
+export async function obtenerEstadoSincronizacionDeportiva() {
+
+  const response =
+    await fetchAutenticado(
+      '/sports-sync/estado'
+    )
+
+  const data =
+    await response.json()
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        'No fue posible consultar el estado de sincronización'
+    )
+  }
+
+  return data
+}
+
+// ============================================================
 // REALIZAR APUESTA
 // ============================================================
 
@@ -327,6 +593,7 @@ export async function realizarApuesta(
   return data
 }
 
+
 // ============================================================
 // CONSULTAR SALDO DEL USUARIO AUTENTICADO
 // ============================================================
@@ -350,6 +617,7 @@ export async function obtenerSaldo() {
   return data
 }
 
+
 // ============================================================
 // OBTENER MIS APUESTAS
 // ============================================================
@@ -372,6 +640,7 @@ export async function obtenerMisApuestas() {
 
   return data
 }
+
 
 // ============================================================
 // FINALIZAR PARTIDO
@@ -447,6 +716,7 @@ export async function liquidarPartido(
 
   return data
 }
+
 
 // ============================================================
 // CONSULTAR ESTADO DE LIQUIDACIÓN DE UN PARTIDO

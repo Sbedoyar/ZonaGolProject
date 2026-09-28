@@ -10,6 +10,7 @@ import {
   realizarApuesta,
 } from '../../services/authService'
 
+
 function MatchesSection({
   search,
   onClearSearch,
@@ -25,17 +26,47 @@ function MatchesSection({
   const [stake, setStake] = useState(0)
 
   const [league, setLeague] = useState('all')
+
   const [timeFilter, setTimeFilter] =
     useState('all')
 
-  const [sort, setSort] = useState('time')
+  const [sort, setSort] =
+    useState('time')
+
+
+  // ============================================================
+  // TEMPORADA SELECCIONADA
+  // ============================================================
+
+  const [
+    temporadaSeleccionada,
+    setTemporadaSeleccionada,
+  ] = useState(1)
+
 
   // ============================================================
   // JORNADA SELECCIONADA
   // ============================================================
 
-  const [jornadaSeleccionada, setJornadaSeleccionada] =
-    useState(1)
+  const [
+    jornadaSeleccionada,
+    setJornadaSeleccionada,
+  ] = useState(1)
+
+
+  // ============================================================
+  // CANTIDAD DE JORNADAS DISPONIBLES
+  //
+  // Temporada 1 = 2026 académica
+  // Temporada 2 = 2024 API-Football
+  //
+  // De 2024 por ahora únicamente sincronizamos Jornada 1.
+  // ============================================================
+
+  const cantidadJornadas =
+    temporadaSeleccionada === 1
+      ? 19
+      : 1
 
 
   // ============================================================
@@ -103,12 +134,16 @@ function MatchesSection({
       return 'today'
     }
 
-    return 'upcoming'
+    if (fechaPartido > hoy) {
+      return 'upcoming'
+    }
+
+    return 'past'
   }
 
 
   // ============================================================
-  // CARGAR PARTIDOS DE LA JORNADA SELECCIONADA
+  // CARGAR PARTIDOS DE LA TEMPORADA Y JORNADA SELECCIONADAS
   // ============================================================
 
   useEffect(() => {
@@ -121,6 +156,7 @@ function MatchesSection({
 
         const respuesta =
           await obtenerPartidos(
+            temporadaSeleccionada,
             jornadaSeleccionada
           )
 
@@ -129,7 +165,7 @@ function MatchesSection({
 
 
         // ======================================================
-        // CONSULTAR DETALLE Y CUOTAS DE LOS 10 PARTIDOS
+        // CONSULTAR DETALLE Y CUOTAS DE LOS PARTIDOS
         // ======================================================
 
         const respuestasDetalle =
@@ -208,7 +244,8 @@ function MatchesSection({
 
 
               return {
-                id: partido.partidoid,
+                id:
+                  partido.partidoid,
 
                 codigo:
                   partido.codigopartido,
@@ -216,7 +253,8 @@ function MatchesSection({
                 jornada:
                   partido.numerojornada,
 
-                league: 'liga',
+                league:
+                  'liga',
 
                 leagueName:
                   'Liga BetPlay',
@@ -328,7 +366,10 @@ function MatchesSection({
       activo = false
     }
 
-  }, [jornadaSeleccionada])
+  }, [
+    temporadaSeleccionada,
+    jornadaSeleccionada,
+  ])
 
 
   // ============================================================
@@ -444,13 +485,8 @@ function MatchesSection({
 
 
   // ============================================================
-  // REALIZAR APUESTA
-  // TODAVÍA SIMULADA
+  // REALIZAR APUESTA REAL EN MYSQL
   // ============================================================
-
-  // ============================================================
-// REALIZAR APUESTA REAL EN MYSQL
-// ============================================================
 
   const handlePlaceBet = async () => {
     if (apostando) {
@@ -510,10 +546,11 @@ function MatchesSection({
           partidoReglaIds
         )
 
-        onSaldoActualizado?.(
-          respuesta.datos
-            .saldoDisponible
-        )
+
+      onSaldoActualizado?.(
+        respuesta.datos
+          .saldoDisponible
+      )
 
 
       onNotify?.(
@@ -606,7 +643,10 @@ function MatchesSection({
 
         if (
           timeFilter === 'upcoming' &&
-          match.day !== 'upcoming'
+          (
+            match.day !== 'upcoming' ||
+            match.status !== 'scheduled'
+          )
         ) {
           return false
         }
@@ -688,6 +728,49 @@ function MatchesSection({
 
 
           {/* ===================================================
+              SELECTOR DE TEMPORADA
+             =================================================== */}
+
+          <label className="date-label jornada-selector">
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4" />
+
+              <path d="M12 13v4M8 21h8M9 17h6" />
+            </svg>
+
+            <select
+              value={temporadaSeleccionada}
+              onChange={(event) => {
+                const nuevaTemporada =
+                  Number(
+                    event.target.value
+                  )
+
+                setTemporadaSeleccionada(
+                  nuevaTemporada
+                )
+
+                setJornadaSeleccionada(1)
+
+                setPicks({})
+                setStake(0)
+              }}
+            >
+              <option value={1}>
+                2026 · Académica
+              </option>
+
+              <option value={2}>
+                2024 · API-Football
+              </option>
+            </select>
+          </label>
+
+
+          {/* ===================================================
               SELECTOR DE JORNADAS
              =================================================== */}
 
@@ -718,7 +801,10 @@ function MatchesSection({
               }
             >
               {Array.from(
-                { length: 19 },
+                {
+                  length:
+                    cantidadJornadas,
+                },
                 (_, index) =>
                   index + 1
               ).map((jornada) => (
@@ -731,7 +817,6 @@ function MatchesSection({
               ))}
             </select>
           </label>
-
         </header>
 
 
@@ -892,7 +977,6 @@ function MatchesSection({
           className="match-list"
           aria-live="polite"
         >
-
           {cargando ? (
             <div className="empty-results">
               <strong>
@@ -941,7 +1025,6 @@ function MatchesSection({
               </p>
             </div>
           )}
-
         </div>
 
       </div>
@@ -980,9 +1063,9 @@ function MatchesSection({
           handlePlaceBet
         }
       />
-
     </section>
   )
 }
+
 
 export default MatchesSection

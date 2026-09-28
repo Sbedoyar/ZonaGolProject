@@ -1015,6 +1015,10 @@ svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: 
   font-size: .62rem;
 }
 
+.admin-sync-card {
+  margin-bottom: 24px;
+}
+
 .admin-status {
   border-radius: 999px;
   padding: 7px 11px;

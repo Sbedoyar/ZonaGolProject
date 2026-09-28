@@ -42,10 +42,14 @@ function Header({
     3: 'Cliente',
   }[usuario?.rolId] || 'Usuario'
 
-  const puedeAdministrar =
-  [1, 2].includes(
+  const rolId =
     Number(usuario?.rolId)
-  )
+
+  const esCliente =
+    rolId === 3
+
+  const puedeAdministrar =
+    [1, 2].includes(rolId)
 
   useEffect(() => {
 
@@ -152,19 +156,21 @@ function Header({
           </a>
 
 
-          <button
-            className={
-              vista === 'apuestas'
-                ? 'active'
-                : ''
-            }
-            type="button"
-            onClick={
-              onVerMisApuestas
-            }
-          >
-            Mis apuestas
-          </button>
+          {esCliente && (
+            <button
+              className={
+                vista === 'apuestas'
+                  ? 'active'
+                  : ''
+              }
+              type="button"
+              onClick={
+                onVerMisApuestas
+              }
+            >
+              Mis apuestas
+            </button>
+          )}
           {puedeAdministrar && (
           <button
             className={
@@ -182,16 +188,18 @@ function Header({
         )}
 
 
-          <button
-            type="button"
-            onClick={() =>
-              onNotify?.(
-                'Próximamente encontrarás aquí las promociones disponibles.'
-              )
-            }
-          >
-            Promociones
-          </button>
+          {esCliente && (
+            <button
+              type="button"
+              onClick={() =>
+                onNotify?.(
+                  'Próximamente encontrarás aquí las promociones disponibles.'
+                )
+              }
+            >
+              Promociones
+            </button>
+          )}
 
 
           <a href="#responsible">
@@ -262,43 +270,47 @@ function Header({
           </button>
 
 
-          <div className="balance">
+          {esCliente && (
+            <>
+              <div className="balance">
 
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M4 6h14a2 2 0 0 1 2 2v11H4a2 2 0 0 1-2-2V6a3 3 0 0 1 3-3h12M16 12h6v4h-6a2 2 0 0 1 0-4Z" />
-            </svg>
-
-
-            <span>
-
-              <small>
-                Saldo disponible
-              </small>
-
-              <strong>
-                {saldoFormateado}
-              </strong>
-
-            </span>
-
-          </div>
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M4 6h14a2 2 0 0 1 2 2v11H4a2 2 0 0 1-2-2V6a3 3 0 0 1 3-3h12M16 12h6v4h-6a2 2 0 0 1 0-4Z" />
+                </svg>
 
 
-          <button
-            className="button button--gold button--small"
-            type="button"
+                <span>
 
-            onClick={() =>
-              onNotify?.(
-                'La recarga está lista para conectarse a un sistema de pagos.'
-              )
-            }
-          >
-            Recargar
-          </button>
+                  <small>
+                    Saldo disponible
+                  </small>
+
+                  <strong>
+                    {saldoFormateado}
+                  </strong>
+
+                </span>
+
+              </div>
+
+
+              <button
+                className="button button--gold button--small"
+                type="button"
+
+                onClick={() =>
+                  onNotify?.(
+                    'La recarga está lista para conectarse a un sistema de pagos.'
+                  )
+                }
+              >
+                Recargar
+              </button>
+            </>
+          )}
 
 
           <div

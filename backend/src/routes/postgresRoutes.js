@@ -223,13 +223,37 @@ router.get('/partidos/:partidoId', async (req, res) => {
 })
 
 router.get('/partidos', async (req, res) => {
+
+    const temporadaId = req.query.temporadaId
+        ? Number(req.query.temporadaId)
+        : 1
+
     const jornada = req.query.jornada
         ? Number(req.query.jornada)
         : null
 
+
+    // ========================================================
+    // VALIDACIONES
+    // ========================================================
+
+    if (
+        !Number.isInteger(temporadaId) ||
+        temporadaId <= 0
+    ) {
+        return res.status(400).json({
+            success: false,
+            message: 'La temporada no es válida'
+        })
+    }
+
+
     if (
         jornada !== null &&
-        (!Number.isInteger(jornada) || jornada <= 0)
+        (
+            !Number.isInteger(jornada) ||
+            jornada <= 0
+        )
     ) {
         return res.status(400).json({
             success: false,
@@ -237,7 +261,9 @@ router.get('/partidos', async (req, res) => {
         })
     }
 
+
     try {
+
         let consulta = `
             SELECT
                 p.PartidoId,
@@ -271,26 +297,35 @@ router.get('/partidos', async (req, res) => {
                 ON local.EquipoId = p.EquipoLocalId
 
             INNER JOIN Equipo visitante
-                ON visitante.EquipoId = p.EquipoVisitanteId
+                ON visitante.EquipoId =
+                   p.EquipoVisitanteId
 
             INNER JOIN Estadio estadio
-                ON estadio.EstadioId = p.EstadioId
+                ON estadio.EstadioId =
+                   p.EstadioId
 
             INNER JOIN EstadoPartido estado
-                ON estado.EstadoPartidoId = p.EstadoPartidoId
+                ON estado.EstadoPartidoId =
+                   p.EstadoPartidoId
 
-            WHERE p.TemporadaId = 1
+            WHERE p.TemporadaId = $1
         `
 
-        const parametros = []
+
+        const parametros = [
+            temporadaId
+        ]
+
 
         if (jornada !== null) {
+
             parametros.push(jornada)
 
             consulta += `
-                AND p.NumeroJornada = $1
+                AND p.NumeroJornada = $2
             `
         }
+
 
         consulta += `
             ORDER BY
@@ -298,23 +333,41 @@ router.get('/partidos', async (req, res) => {
                 p.FechaHoraInicio ASC
         `
 
-        const result = await postgresPool.query(
-            consulta,
-            parametros
-        )
+
+        const result =
+            await postgresPool.query(
+                consulta,
+                parametros
+            )
+
 
         return res.status(200).json({
             success: true,
-            cantidad: result.rows.length,
-            datos: result.rows
+
+            temporadaId,
+
+            jornada,
+
+            cantidad:
+                result.rows.length,
+
+            datos:
+                result.rows
         })
 
+
     } catch (error) {
-        console.error('Error consultando partidos:', error)
+
+        console.error(
+            'Error consultando partidos:',
+            error
+        )
+
 
         return res.status(500).json({
             success: false,
-            message: 'Error interno consultando los partidos'
+            message:
+                'Error interno consultando los partidos'
         })
     }
 })
