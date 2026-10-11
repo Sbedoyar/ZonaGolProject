@@ -160,7 +160,10 @@ function MatchCard({
 
           <div className="match-team">
             <span className="match-team__badge">
-              {match.homeCode}
+              <img
+                src={`http://localhost:5000/api/postgres/equipos/${match.homeId}/logo`}
+                alt={`Escudo de ${match.home}`}
+              />
             </span>
 
             <strong>
@@ -173,7 +176,10 @@ function MatchCard({
 
           <div className="match-team">
             <span className="match-team__badge">
-              {match.awayCode}
+              <img
+                src={`http://localhost:5000/api/postgres/equipos/${match.awayId}/logo`}
+                alt={`Escudo de ${match.away}`}
+              />
             </span>
 
             <strong>

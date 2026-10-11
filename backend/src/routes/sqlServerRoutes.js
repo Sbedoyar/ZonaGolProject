@@ -29,7 +29,15 @@ const {
 
 const router = express.Router()
 
+const {
+    subirFotoPerfil
+} = require('../middlewares/profileImageMiddleware')
 
+const {
+    subirImagenBuffer,
+    eliminarArchivo,
+    obtenerArchivo
+} = require('../services/googleDriveService')
 // ============================================================
 // LOGIN
 //
@@ -1595,6 +1603,437 @@ router.post(
 // ============================================================
 // RUTA PROTEGIDA DE PRUEBA
 // ============================================================
+// ============================================================
+// SUBIR O CAMBIAR FOTO DE PERFIL
+// ============================================================
+
+router.post(
+    '/perfil/foto',
+
+    verificarToken,
+
+    subirFotoPerfil.single('fotoPerfil'),
+
+    async (req, res) => {
+
+        let nuevoArchivoDriveId = null
+
+        try {
+
+            // =================================================
+            // VALIDAR IMAGEN
+            // =================================================
+
+            if (!req.file) {
+
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        'Debes seleccionar una imagen'
+                })
+            }
+
+
+            // =================================================
+            // OBTENER USUARIO AUTENTICADO
+            // =================================================
+
+            const usuarioId =
+                Number(
+                    req.usuario.usuarioId
+                )
+
+
+            if (
+                !Number.isInteger(usuarioId) ||
+                usuarioId <= 0
+            ) {
+
+                return res.status(401).json({
+                    success: false,
+                    message:
+                        'Usuario autenticado no válido'
+                })
+            }
+
+
+            // =================================================
+            // VALIDAR CARPETA DE DRIVE
+            // =================================================
+
+            const carpetaPerfilesId =
+                process.env
+                    .GOOGLE_DRIVE_PROFILES_FOLDER_ID
+
+
+            if (!carpetaPerfilesId) {
+
+                throw new Error(
+                    'No está configurada la carpeta de perfiles de Google Drive'
+                )
+            }
+
+
+            // =================================================
+            // CONSULTAR FOTO ACTUAL
+            // =================================================
+
+            const pool =
+                await poolPromise
+
+
+            const resultadoUsuario =
+                await pool
+                    .request()
+                    .input(
+                        'usuarioId',
+                        sql.Int,
+                        usuarioId
+                    )
+                    .query(`
+                        SELECT
+                            UsuarioId,
+                            FotoPerfilDriveId
+                        FROM Usuario
+                        WHERE UsuarioId = @usuarioId
+                    `)
+
+
+            if (
+                resultadoUsuario
+                    .recordset
+                    .length === 0
+            ) {
+
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        'Usuario no encontrado'
+                })
+            }
+
+
+            const fotoAnteriorDriveId =
+                resultadoUsuario
+                    .recordset[0]
+                    .FotoPerfilDriveId
+
+
+            // =================================================
+            // GENERAR NOMBRE CONTROLADO
+            // =================================================
+
+            const extensionPorMime = {
+                'image/jpeg': 'jpg',
+                'image/png': 'png',
+                'image/webp': 'webp'
+            }
+
+
+            const extension =
+                extensionPorMime[
+                    req.file.mimetype
+                ]
+
+
+            const nombreArchivo =
+                `perfil-${usuarioId}-${Date.now()}.${extension}`
+
+
+            // =================================================
+            // SUBIR NUEVA FOTO A DRIVE
+            // =================================================
+
+            const archivoDrive =
+                await subirImagenBuffer(
+                    req.file.buffer,
+                    nombreArchivo,
+                    req.file.mimetype,
+                    carpetaPerfilesId
+                )
+
+
+            nuevoArchivoDriveId =
+                archivoDrive.id
+
+
+            // =================================================
+            // ASOCIAR NUEVA FOTO AL USUARIO
+            // =================================================
+
+            await pool
+                .request()
+                .input(
+                    'usuarioId',
+                    sql.Int,
+                    usuarioId
+                )
+                .input(
+                    'fotoPerfilDriveId',
+                    sql.VarChar(100),
+                    nuevoArchivoDriveId
+                )
+                .query(`
+                    UPDATE Usuario
+                    SET
+                        FotoPerfilDriveId =
+                            @fotoPerfilDriveId
+                    WHERE UsuarioId =
+                        @usuarioId
+                `)
+
+
+            // =================================================
+            // ELIMINAR FOTO ANTERIOR
+            //
+            // La nueva imagen y SQL Server ya quedaron
+            // actualizados. Si falla esta limpieza, no
+            // perjudicamos la foto nueva.
+            // =================================================
+
+            if (
+                fotoAnteriorDriveId &&
+                fotoAnteriorDriveId !==
+                    nuevoArchivoDriveId
+            ) {
+
+                try {
+
+                    await eliminarArchivo(
+                        fotoAnteriorDriveId
+                    )
+
+                } catch (error) {
+
+                    console.error(
+                        'No fue posible eliminar la foto de perfil anterior:',
+                        error.message
+                    )
+                }
+            }
+
+
+            return res.status(200).json({
+                success: true,
+                message:
+                    'Foto de perfil actualizada correctamente',
+
+                fotoPerfilDriveId:
+                    nuevoArchivoDriveId
+            })
+
+        } catch (error) {
+
+            // =================================================
+            // LIMPIEZA SI DRIVE FUNCIONÓ PERO SQL SERVER FALLÓ
+            // =================================================
+
+            if (nuevoArchivoDriveId) {
+
+                try {
+
+                    await eliminarArchivo(
+                        nuevoArchivoDriveId
+                    )
+
+                } catch (errorLimpieza) {
+
+                    console.error(
+                        'No fue posible limpiar la nueva imagen de Drive:',
+                        errorLimpieza.message
+                    )
+                }
+            }
+
+
+            console.error(
+                'Error actualizando foto de perfil:',
+                error
+            )
+
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    'No fue posible actualizar la foto de perfil'
+            })
+        }
+    }
+)
+
+// ============================================================
+// OBTENER FOTO DE PERFIL
+//
+// La imagen permanece privada en Google Drive.
+// El usuario se identifica exclusivamente mediante su JWT.
+// ============================================================
+
+router.get(
+    '/perfil/foto',
+
+    verificarToken,
+
+    async (req, res) => {
+
+        try {
+
+            // =================================================
+            // OBTENER USUARIO AUTENTICADO
+            // =================================================
+
+            const usuarioId =
+                Number(
+                    req.usuario.usuarioId
+                )
+
+
+            if (
+                !Number.isInteger(usuarioId) ||
+                usuarioId <= 0
+            ) {
+
+                return res.status(401).json({
+                    success: false,
+                    message:
+                        'Usuario autenticado no válido'
+                })
+            }
+
+
+            // =================================================
+            // CONSULTAR FOTO ASOCIADA EN SQL SERVER
+            // =================================================
+
+            const pool =
+                await poolPromise
+
+
+            const resultado =
+                await pool
+                    .request()
+                    .input(
+                        'usuarioId',
+                        sql.Int,
+                        usuarioId
+                    )
+                    .query(`
+                        SELECT
+                            FotoPerfilDriveId
+                        FROM Usuario
+                        WHERE UsuarioId =
+                            @usuarioId
+                    `)
+
+
+            if (
+                resultado
+                    .recordset
+                    .length === 0
+            ) {
+
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        'Usuario no encontrado'
+                })
+            }
+
+
+            const fotoPerfilDriveId =
+                resultado
+                    .recordset[0]
+                    .FotoPerfilDriveId
+
+
+            if (!fotoPerfilDriveId) {
+
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        'El usuario no tiene foto de perfil'
+                })
+            }
+
+
+            // =================================================
+            // OBTENER ARCHIVO PRIVADO DESDE GOOGLE DRIVE
+            // =================================================
+
+            const archivo =
+                await obtenerArchivo(
+                    fotoPerfilDriveId
+                )
+
+
+            // =================================================
+            // TRANSMITIR IMAGEN AL FRONTEND
+            // =================================================
+
+            const contentType =
+                archivo.headers[
+                    'content-type'
+                ] ||
+                'application/octet-stream'
+
+
+            res.setHeader(
+                'Content-Type',
+                contentType
+            )
+
+
+            res.setHeader(
+                'Cache-Control',
+                'private, no-store'
+            )
+
+
+            archivo.data.on(
+                'error',
+                (error) => {
+
+                    console.error(
+                        'Error transmitiendo foto de perfil:',
+                        error.message
+                    )
+
+                    if (!res.headersSent) {
+
+                        res.status(500).json({
+                            success: false,
+                            message:
+                                'No fue posible obtener la foto de perfil'
+                        })
+
+                    } else {
+
+                        res.destroy()
+                    }
+                }
+            )
+
+
+            archivo.data.pipe(res)
+
+        } catch (error) {
+
+            console.error(
+                'Error obteniendo foto de perfil:',
+                error
+            )
+
+
+            if (!res.headersSent) {
+
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        'No fue posible obtener la foto de perfil'
+                })
+            }
+        }
+    }
+)
 
 router.get(
     '/perfil-protegido',
@@ -1602,6 +2041,80 @@ router.get(
     async (req, res) => {
 
         try {
+
+            const usuarioId =
+                Number(
+                    req.usuario.usuarioId
+                )
+
+
+            if (
+                !Number.isInteger(usuarioId) ||
+                usuarioId <= 0
+            ) {
+
+                return res.status(401).json({
+                    success: false,
+                    message:
+                        'Usuario autenticado no válido'
+                })
+            }
+
+
+            const pool =
+                await poolPromise
+
+
+            const resultado =
+                await pool
+                    .request()
+                    .input(
+                        'usuarioId',
+                        sql.Int,
+                        usuarioId
+                    )
+                    .query(`
+                        SELECT
+                            Celular,
+                            FechaRegistro,
+                            FotoPerfilDriveId
+                        FROM Usuario
+                        WHERE UsuarioId =
+                            @usuarioId
+                    `)
+
+
+            if (
+                resultado
+                    .recordset
+                    .length === 0
+            ) {
+
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        'Usuario no encontrado'
+                })
+            }
+
+
+            const tieneFotoPerfil =
+                Boolean(
+                    resultado
+                        .recordset[0]
+                        .FotoPerfilDriveId
+                )
+            const celular =
+                resultado
+                    .recordset[0]
+                    .Celular
+
+
+            const fechaRegistro =
+                resultado
+                    .recordset[0]
+                    .FechaRegistro
+
 
             return res.status(200).json({
                 success: true,
@@ -1617,7 +2130,13 @@ router.get(
                         req.usuario.correo,
 
                     rolId:
-                        req.usuario.rolId
+                        req.usuario.rolId,
+
+                    celular,
+
+                    fechaRegistro,
+
+                    tieneFotoPerfil
                 }
             })
 
@@ -1627,6 +2146,7 @@ router.get(
                 'Error en ruta protegida:',
                 error
             )
+
 
             return res.status(500).json({
                 success: false,

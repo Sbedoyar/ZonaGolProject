@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import MatchCard from './MatchCard'
 import BetSlip from './BetSlip'
 import MobileBetSlip from './MobileBetSlip'
+import CustomSelect from '../common/CustomSelect'
 
 import {
   obtenerPartidos,
@@ -264,6 +265,12 @@ function MatchesSection({
 
                 away:
                   partido.equipovisitante,
+
+                homeId:
+                  partido.equipolocalid,
+
+                awayId:
+                  partido.equipovisitanteid,
 
                 homeCode:
                   partido.siglalocal,
@@ -731,128 +738,117 @@ function MatchesSection({
               SELECTOR DE TEMPORADA
              =================================================== */}
 
-          <label className="date-label jornada-selector">
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4" />
+          <CustomSelect
+            className="season-custom-select"
+            value={temporadaSeleccionada}
+            ariaLabel="Seleccionar temporada"
+            options={[
+              {
+                value: 1,
+                label: '2026 · Académica',
+              },
+              {
+                value: 2,
+                label: '2024 · API-Football',
+              },
+            ]}
+            onChange={(nuevaTemporada) => {
+              setTemporadaSeleccionada(
+                Number(nuevaTemporada)
+              )
 
-              <path d="M12 13v4M8 21h8M9 17h6" />
-            </svg>
+              setJornadaSeleccionada(1)
 
-            <select
-              value={temporadaSeleccionada}
-              onChange={(event) => {
-                const nuevaTemporada =
-                  Number(
-                    event.target.value
-                  )
-
-                setTemporadaSeleccionada(
-                  nuevaTemporada
-                )
-
-                setJornadaSeleccionada(1)
-
-                setPicks({})
-                setStake(0)
-              }}
-            >
-              <option value={1}>
-                2026 · Académica
-              </option>
-
-              <option value={2}>
-                2024 · API-Football
-              </option>
-            </select>
-          </label>
+              setPicks({})
+              setStake(0)
+            }}
+            icon={
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4" />
+                <path d="M12 13v4M8 21h8M9 17h6" />
+              </svg>
+            }
+          />
 
 
           {/* ===================================================
               SELECTOR DE JORNADAS
              =================================================== */}
 
-          <label className="date-label jornada-selector">
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <rect
-                x="3"
-                y="5"
-                width="18"
-                height="16"
-                rx="2"
-              />
-
-              <path d="M16 3v4M8 3v4M3 11h18" />
-            </svg>
-
-            <select
-              value={jornadaSeleccionada}
-              onChange={(event) =>
-                setJornadaSeleccionada(
-                  Number(
-                    event.target.value
-                  )
-                )
-              }
-            >
-              {Array.from(
+          <CustomSelect
+            className="round-custom-select"
+            value={jornadaSeleccionada}
+            ariaLabel="Seleccionar jornada"
+            options={
+              Array.from(
                 {
                   length:
                     cantidadJornadas,
                 },
-                (_, index) =>
-                  index + 1
-              ).map((jornada) => (
-                <option
-                  key={jornada}
-                  value={jornada}
-                >
-                  Jornada {jornada}
-                </option>
-              ))}
-            </select>
-          </label>
+                (_, index) => ({
+                  value: index + 1,
+                  label:
+                    `Jornada ${index + 1}`,
+                })
+              )
+            }
+            onChange={(nuevaJornada) =>
+              setJornadaSeleccionada(
+                Number(nuevaJornada)
+              )
+            }
+            icon={
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <rect
+                  x="3"
+                  y="5"
+                  width="18"
+                  height="16"
+                  rx="2"
+                />
+
+                <path d="M16 3v4M8 3v4M3 11h18" />
+              </svg>
+            }
+          />
         </header>
 
 
         <div className="filters-panel">
 
-          <label className="filter-select">
-            <small>
-              LIGA
-            </small>
-
-            <span>
+          <CustomSelect
+            className="league-custom-select"
+            label="Liga"
+            value={league}
+            ariaLabel="Seleccionar liga"
+            options={[
+              {
+                value: 'all',
+                label: 'Todas las ligas',
+              },
+              {
+                value: 'liga',
+                label: 'Liga BetPlay',
+              },
+            ]}
+            onChange={(nuevaLiga) =>
+              setLeague(nuevaLiga)
+            }
+            icon={
               <svg
                 viewBox="0 0 24 24"
                 aria-hidden="true"
               >
                 <path d="M8 4h8v5a4 4 0 0 1-8 0V4ZM8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4M12 13v4M8 21h8M9 17h6" />
               </svg>
-
-              <select
-                value={league}
-                onChange={(event) =>
-                  setLeague(
-                    event.target.value
-                  )
-                }
-              >
-                <option value="all">
-                  Todas las ligas
-                </option>
-
-                <option value="liga">
-                  Liga BetPlay
-                </option>
-              </select>
-            </span>
-          </label>
+            }
+          />
 
 
           <div
@@ -925,28 +921,25 @@ function MatchesSection({
           </div>
 
 
-          <label className="sort-select">
-            <span>
-              Ordenar por
-            </span>
-
-            <select
-              value={sort}
-              onChange={(event) =>
-                setSort(
-                  event.target.value
-                )
-              }
-            >
-              <option value="time">
-                Hora
-              </option>
-
-              <option value="highest">
-                Cuota más alta
-              </option>
-            </select>
-          </label>
+          <CustomSelect
+            className="sort-custom-select"
+            label="Ordenar por"
+            value={sort}
+            ariaLabel="Ordenar partidos"
+            options={[
+              {
+                value: 'time',
+                label: 'Hora',
+              },
+              {
+                value: 'highest',
+                label: 'Cuota más alta',
+              },
+            ]}
+            onChange={(nuevoOrden) =>
+              setSort(nuevoOrden)
+            }
+          />
 
         </div>
 

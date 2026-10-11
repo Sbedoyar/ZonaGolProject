@@ -9,6 +9,7 @@ const mongoRoutes = require('./routes/mongoRoutes')
 const firebaseRoutes = require('./routes/firebaseRoutes')
 const postgresRoutes = require('./routes/postgresRoutes')
 const sportsSyncRoutes = require('./routes/sportsSyncRoutes')
+const googleDriveRoutes =  require('./routes/googleDriveRoutes')
 
 // CONEXIONES
 const {
@@ -24,6 +25,8 @@ const {
     iniciarSportsScheduler
 } = require('./schedulers/sportsScheduler')
 
+const wompiRoutes =
+    require('./routes/wompiRoutes')
 
 const app = express()
 
@@ -46,6 +49,9 @@ app.use('/api', sqlServerRoutes)
 // GOOGLE SSO
 app.use('/api', googleAuthRoutes)
 
+// GOOGLE DRIVE
+app.use('/api/google-drive', googleDriveRoutes)
+
 // MYSQL
 app.use('/api/mysql', mysqlRoutes)
 
@@ -64,6 +70,11 @@ app.use(
     sportsSyncRoutes
 )
 
+// WOMPI / RECARGAS
+app.use(
+    '/api/pagos/wompi',
+    wompiRoutes
+)
 
 // =====================================
 // PRUEBA DEL BACKEND

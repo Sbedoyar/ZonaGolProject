@@ -16,7 +16,11 @@ function MyBets({
 
   const [error, setError] =
     useState('')
-
+  
+  const [
+    apuestaDetalle,
+    setApuestaDetalle,
+  ] = useState(null)
 
   // ============================================================
   // FORMATO MONEDA
@@ -360,8 +364,10 @@ function MyBets({
 
                 <div className="my-bet-selections">
 
-                  {apuesta.selecciones.map(
-                    (seleccion) => (
+                  {apuesta.selecciones
+                    .slice(0, 1)
+                    .map(
+                      (seleccion) => (
 
                       <div
                         key={
@@ -376,10 +382,10 @@ function MyBets({
                           <span className="my-bet-team">
 
                             <b>
-                              {
-                                seleccion
-                                  .siglaLocal
-                              }
+                              <img
+                                src={`http://localhost:5000/api/postgres/equipos/${seleccion.equipoLocalId}/logo`}
+                                alt={`Escudo de ${seleccion.equipoLocal}`}
+                              />
                             </b>
 
                             {
@@ -398,10 +404,10 @@ function MyBets({
                           <span className="my-bet-team">
 
                             <b>
-                              {
-                                seleccion
-                                  .siglaVisitante
-                              }
+                              <img
+                                src={`http://localhost:5000/api/postgres/equipos/${seleccion.equipoVisitanteId}/logo`}
+                                alt={`Escudo de ${seleccion.equipoVisitante}`}
+                              />
                             </b>
 
                             {
@@ -479,6 +485,23 @@ function MyBets({
                     )
                   )}
 
+                  <button
+                    type="button"
+                    className="my-bet-details-button"
+                    onClick={() =>
+                      setApuestaDetalle(apuesta)
+                    }
+                  >
+                    Ver{' '}
+                    {apuesta.selecciones.length === 1
+                      ? 'la selección'
+                      : `las ${apuesta.selecciones.length} selecciones`}
+
+                    <span aria-hidden="true">
+                      →
+                    </span>
+                  </button>
+
                 </div>
 
 
@@ -497,6 +520,227 @@ function MyBets({
             )
           )}
 
+        </div>
+      )}
+      
+
+      {apuestaDetalle && (
+        <div
+          className="my-bet-modal-overlay"
+          onClick={() =>
+            setApuestaDetalle(null)
+          }
+        >
+          <div
+            className="my-bet-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="my-bet-modal-title"
+            onClick={(evento) =>
+              evento.stopPropagation()
+            }
+          >
+
+            <header className="my-bet-modal__header">
+
+              <div>
+                <span>
+                  DETALLE DE APUESTA
+                </span>
+
+                <h2 id="my-bet-modal-title">
+                  {apuestaDetalle.codigoApuesta}
+                </h2>
+
+                <p>
+                  {
+                    apuestaDetalle
+                      .selecciones.length
+                  }{' '}
+                  {apuestaDetalle
+                    .selecciones.length === 1
+                    ? 'selección'
+                    : 'selecciones'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="my-bet-modal__close"
+                onClick={() =>
+                  setApuestaDetalle(null)
+                }
+                aria-label="Cerrar detalle de apuesta"
+              >
+                ×
+              </button>
+
+            </header>
+
+
+            <div className="my-bet-modal__summary">
+
+              <div>
+                <small>
+                  Apostado
+                </small>
+
+                <strong>
+                  {formatoCOP.format(
+                    apuestaDetalle
+                      .montoApostado
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <small>
+                  Cuota total
+                </small>
+
+                <strong>
+                  {Number(
+                    apuestaDetalle
+                      .cuotaTotal
+                  ).toFixed(2)}
+                </strong>
+              </div>
+
+              <div>
+                <small>
+                  Retorno potencial
+                </small>
+
+                <strong>
+                  {formatoCOP.format(
+                    apuestaDetalle
+                      .retornoPotencial
+                  )}
+                </strong>
+              </div>
+
+            </div>
+
+
+            <div className="my-bet-modal__selections">
+
+              {apuestaDetalle.selecciones.map(
+                (seleccion, indice) => (
+
+                  <article
+                    key={
+                      seleccion
+                        .detalleApuestaId
+                    }
+                    className="my-bet-modal-selection"
+                  >
+
+                    <div className="my-bet-modal-selection__number">
+                      {indice + 1}
+                    </div>
+
+
+                    <div className="my-bet-modal-selection__content">
+
+                      <div className="my-bet-modal-selection__match">
+
+                        <strong className="my-bet-modal-team">
+                          <img
+                            src={`http://localhost:5000/api/postgres/equipos/${seleccion.equipoLocalId}/logo`}
+                            alt={`Escudo de ${seleccion.equipoLocal}`}
+                          />
+
+                          <span>
+                            {seleccion.equipoLocal}
+                          </span>
+                        </strong>
+
+                        <span className="my-bet-modal-vs">
+                          vs
+                        </span>
+
+                        <strong className="my-bet-modal-team my-bet-modal-team--away">
+                          <img
+                            src={`http://localhost:5000/api/postgres/equipos/${seleccion.equipoVisitanteId}/logo`}
+                            alt={`Escudo de ${seleccion.equipoVisitante}`}
+                          />
+
+                          <span>
+                            {seleccion.equipoVisitante}
+                          </span>
+                        </strong>
+
+                      </div>
+
+
+                      <div className="my-bet-modal-selection__data">
+
+                        <div>
+                          <small>
+                            Selección
+                          </small>
+
+                          <strong>
+                            {
+                              seleccion
+                                .opcionApuesta
+                            }
+                          </strong>
+                        </div>
+
+
+                        <div>
+                          <small>
+                            Cuota
+                          </small>
+
+                          <strong>
+                            {Number(
+                              seleccion
+                                .cuotaAceptada
+                            ).toFixed(2)}
+                          </strong>
+                        </div>
+
+
+                        <div>
+                          <small>
+                            Jornada
+                          </small>
+
+                          <strong>
+                            {
+                              seleccion
+                                .jornada
+                            }
+                          </strong>
+                        </div>
+
+
+                        <div>
+                          <small>
+                            Estado
+                          </small>
+
+                          <strong>
+                            {
+                              seleccion
+                                .estadoDetalle
+                            }
+                          </strong>
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  </article>
+                )
+              )}
+
+            </div>
+
+          </div>
         </div>
       )}
 

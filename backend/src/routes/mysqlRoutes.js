@@ -1,9 +1,9 @@
 const express = require('express')
 const mysqlPool = require('../databases/mysqlDatabase')
 const { postgresPool } = require('../databases/postgresDatabase')
+const { getMongoDb } = require('../databases/mongoDatabase')
 const { verificarToken } = require('../middlewares/authMiddleware')
 const router = express.Router()
-
 const {
     autorizarRoles
 } = require('../middlewares/roleMiddleware')
@@ -635,6 +635,50 @@ router.post(
             await connection.commit()
 
 
+            // =====================================================
+            // 11. CONFIRMAR TODO
+            // =====================================================
+
+            await connection.commit()
+
+
+            // =====================================================
+            // MONGODB:
+            // REGISTRAR ACTIVIDAD DE APUESTA
+            // =====================================================
+
+            const mongoDb =
+                getMongoDb()
+
+            await mongoDb
+                .collection('historial_actividad')
+                .insertOne({
+                    usuarioId,
+
+                    tipoActividad:
+                        'APUESTA_CREADA',
+
+                    entidad:
+                        'APUESTA',
+
+                    entidadId:
+                        apuestaId,
+
+                    fechaHora:
+                        new Date(),
+
+                    metadata: {
+                        codigoApuesta,
+
+                        montoApostado,
+
+                        cantidadSelecciones:
+                            opcionesResult.rows.length
+                    }
+                })
+
+
+
             // =================================================
             // CALCULAR CUOTA TOTAL
             //
@@ -947,9 +991,11 @@ router.get(
                         p.NumeroJornada,
                         p.FechaHoraInicio,
 
+                        local.EquipoId AS EquipoLocalId,
                         local.Nombre AS EquipoLocal,
                         local.Sigla AS SiglaLocal,
 
+                        visitante.EquipoId AS EquipoVisitanteId,
                         visitante.Nombre AS EquipoVisitante,
                         visitante.Sigla AS SiglaVisitante,
 
@@ -1104,25 +1150,39 @@ router.get(
                                 )
                                 : null,
 
+                        equipoLocalId:
+                            opcion
+                                ? Number(
+                                    opcion.equipolocalid
+                                )
+                                : null,
+
                         equipoLocal:
                             opcion
                                 ?.equipolocal ||
-                                null,
+                            null,
 
                         siglaLocal:
                             opcion
                                 ?.siglalocal ||
-                                null,
+                            null,
+
+                        equipoVisitanteId:
+                            opcion
+                                ? Number(
+                                    opcion.equipovisitanteid
+                                )
+                                : null,
 
                         equipoVisitante:
                             opcion
                                 ?.equipovisitante ||
-                                null,
+                            null,
 
                         siglaVisitante:
                             opcion
                                 ?.siglavisitante ||
-                                null,
+                            null,
 
                         opcionApuesta:
                             opcion

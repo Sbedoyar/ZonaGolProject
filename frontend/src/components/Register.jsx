@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import logo from '../assets/logo.svg'
 import '../styles/auth.css'
+import CustomSelect from './common/CustomSelect'
 
 import {
   registrarUsuario,
@@ -516,7 +517,7 @@ function Register({
           </p>
 
 
-          <ol>
+          <ol className="register-progress">
 
             <li className="active">
 
@@ -658,10 +659,6 @@ function Register({
                   Información personal
                 </h3>
 
-                <p>
-                  Tal como aparece en tu documento.
-                </p>
-
               </div>
 
             </div>
@@ -756,33 +753,35 @@ function Register({
                 </span>
 
 
-                <span className="field-control">
+                <CustomSelect
+                  className="document-type-custom-select"
+                  value={form.tipoDocumento}
+                  ariaLabel="Seleccionar tipo de documento"
+                  options={[
+                    {
+                      value: 'CC',
+                      label: 'Cédula de ciudadanía (CC)',
+                    },
+                    {
+                      value: 'CE',
+                      label: 'Cédula de extranjería (CE)',
+                    },
+                    {
+                      value: 'PAS',
+                      label: 'Pasaporte',
+                    },
+                  ]}
+                  onChange={(nuevoTipoDocumento) => {
 
-                  <select
-                    name="tipoDocumento"
-                    value={
-                      form.tipoDocumento
-                    }
-                    onChange={
-                      handleChange
-                    }
-                  >
+                    setForm((formActual) => ({
+                      ...formActual,
 
-                    <option value="CC">
-                      Cédula de ciudadanía (CC)
-                    </option>
+                      tipoDocumento:
+                        nuevoTipoDocumento,
+                    }))
 
-                    <option value="CE">
-                      Cédula de extranjería (CE)
-                    </option>
-
-                    <option value="PAS">
-                      Pasaporte
-                    </option>
-
-                  </select>
-
-                </span>
+                  }}
+                />
 
               </label>
 

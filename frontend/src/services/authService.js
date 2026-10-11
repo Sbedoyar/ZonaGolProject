@@ -476,7 +476,106 @@ export async function fetchAutenticado(
     }
   )
 }
+// ============================================================
+// ACTUALIZAR FOTO DE PERFIL
+//
+// Envía la imagen como multipart/form-data.
+// fetchAutenticado agrega automáticamente el JWT.
+// ============================================================
 
+export async function actualizarFotoPerfil(
+  archivo
+) {
+
+  if (!(archivo instanceof File)) {
+    throw new Error(
+      'Debes seleccionar una imagen válida'
+    )
+  }
+
+
+  const formData =
+    new FormData()
+
+
+  formData.append(
+    'fotoPerfil',
+    archivo
+  )
+
+
+  const response =
+    await fetchAutenticado(
+      '/perfil/foto',
+      {
+        method: 'POST',
+        body: formData,
+      }
+    )
+
+
+  const data =
+    await response.json()
+
+
+  if (!response.ok) {
+    throw new Error(
+      data.message ||
+        'No fue posible actualizar la foto de perfil'
+    )
+  }
+
+
+  return data
+}
+
+// ============================================================
+// OBTENER FOTO DE PERFIL
+//
+// Solicita la imagen privada al backend usando el JWT.
+// Devuelve un Blob que después React podrá mostrar.
+// ============================================================
+
+export async function obtenerFotoPerfil() {
+
+  const response =
+    await fetchAutenticado(
+      '/perfil/foto'
+    )
+
+
+  if (!response.ok) {
+
+    let mensaje =
+      'No fue posible obtener la foto de perfil'
+
+
+    try {
+
+      const data =
+        await response.json()
+
+      mensaje =
+        data.message ||
+        mensaje
+
+    } catch {
+      // La respuesta no contenía JSON.
+    }
+
+
+    throw new Error(
+      mensaje
+    )
+  }
+
+
+  const blob =
+    await response.blob()
+
+
+  return blob
+}
 // ============================================================
 // SINCRONIZAR JORNADA DEPORTIVA DESDE API-FOOTBALL
 //
@@ -739,6 +838,51 @@ export async function obtenerEstadoLiquidacionPartido(
         'Error consultando el estado de liquidación'
     )
   }
+
+  return data
+}
+
+// ============================================================
+// PREPARAR RECARGA CON WOMPI
+//
+// Requiere JWT.
+// Solo disponible para CLIENTE.
+// ============================================================
+
+export async function prepararRecargaWompi(
+  monto
+) {
+
+  const response =
+    await fetchAutenticado(
+      '/pagos/wompi/checkout',
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+
+        body: JSON.stringify({
+          monto,
+        }),
+      }
+    )
+
+
+  const data =
+    await response.json()
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      data.message ||
+        'No fue posible preparar la recarga'
+    )
+  }
+
 
   return data
 }

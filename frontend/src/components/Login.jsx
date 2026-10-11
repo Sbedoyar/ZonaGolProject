@@ -392,7 +392,7 @@ function Login({
               'standard',
 
             theme:
-              'outline',
+              'filled_black',
 
             size:
               'large',
@@ -401,7 +401,7 @@ function Login({
               'continue_with',
 
             shape:
-              'rectangular',
+              'pill',
 
             logo_alignment:
               'left',
@@ -570,7 +570,7 @@ function Login({
 
 
       {/* LADO DERECHO */}
-      <section className="auth-panel">
+      <section className="auth-panel login-panel">
 
         {/* Logo visible principalmente en celular */}
         <div className="mobile-brand">
@@ -612,7 +612,10 @@ function Login({
           </div>
 
 
-          <form onSubmit={handleSubmit}>
+          <form
+            className="login-form"
+            onSubmit={handleSubmit}
+          >
 
             {/* CORREO */}
             <label className="field">
@@ -787,7 +790,7 @@ function Login({
 
 
             {/* SEPARADOR GOOGLE */}
-            <div className="divider">
+            <div className="login-divider">
               <span>
                 o continúa con
               </span>
@@ -795,16 +798,12 @@ function Login({
 
 
             {/* BOTÓN OFICIAL DE GOOGLE */}
-            <div
-              ref={googleButtonRef}
-              style={{
-                width: '100%',
-                minHeight: '44px',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            ></div>
+            <div className="login-google-button">
+              <div
+                ref={googleButtonRef}
+                className="login-google-button__official"
+              ></div>
+            </div>
 
 
             {cargandoGoogle && (
@@ -829,7 +828,7 @@ function Login({
 
 
             {/* REGISTRO NORMAL */}
-            <div className="divider">
+            <div className="login-divider">
               <span>
                 ¿Aún no tienes una cuenta?
               </span>

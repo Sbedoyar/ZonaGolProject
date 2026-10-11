@@ -9,6 +9,10 @@ const {
     postgresPool
 } = require('../databases/postgresDatabase')
 
+const {
+    obtenerArchivo
+} = require('../services/googleDriveService')
+
 
 const router = express.Router()
 
@@ -1050,6 +1054,137 @@ router.get(
                 message:
                     'Error interno evaluando las reglas del partido'
             })
+        }
+    }
+)
+
+// ============================================================
+// OBTENER LOGO DE EQUIPO DESDE GOOGLE DRIVE
+// PostgreSQL -> Equipo -> Google Drive
+// ============================================================
+
+router.get(
+    '/equipos/:equipoId/logo',
+    async (req, res) => {
+
+        const equipoId =
+            Number(req.params.equipoId)
+
+        if (
+            !Number.isInteger(equipoId) ||
+            equipoId <= 0
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    'El EquipoId no es válido'
+            })
+        }
+
+        try {
+
+            // =================================================
+            // 1. BUSCAR REFERENCIA DEL LOGO EN POSTGRESQL
+            // =================================================
+
+            const resultado =
+                await postgresPool.query(
+                    `
+                    SELECT
+                        LogoDriveId
+                    FROM Equipo
+                    WHERE EquipoId = $1
+                    `,
+                    [equipoId]
+                )
+
+            if (
+                resultado.rows.length === 0
+            ) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        'Equipo no encontrado'
+                })
+            }
+
+            const logoDriveId =
+                resultado.rows[0]
+                    .logodriveid
+
+            if (!logoDriveId) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        'El equipo no tiene logo registrado'
+                })
+            }
+
+            // =================================================
+            // 2. OBTENER ARCHIVO PRIVADO DESDE GOOGLE DRIVE
+            // =================================================
+
+            const archivo =
+                await obtenerArchivo(
+                    logoDriveId
+                )
+
+            const contentType =
+                archivo.headers[
+                    'content-type'
+                ] ||
+                'image/png'
+
+            res.setHeader(
+                'Content-Type',
+                contentType
+            )
+
+            res.setHeader(
+                'Cache-Control',
+                'public, max-age=86400'
+            )
+
+            // =================================================
+            // 3. TRANSMITIR IMAGEN AL CLIENTE
+            // =================================================
+
+            archivo.data.on(
+                'error',
+                error => {
+                    console.error(
+                        'Error transmitiendo logo de equipo:',
+                        error
+                    )
+
+                    if (!res.headersSent) {
+                        res.status(500).json({
+                            success: false,
+                            message:
+                                'Error transmitiendo el logo'
+                        })
+                    } else {
+                        res.destroy()
+                    }
+                }
+            )
+
+            archivo.data.pipe(res)
+
+        } catch (error) {
+
+            console.error(
+                'Error obteniendo logo de equipo:',
+                error
+            )
+
+            if (!res.headersSent) {
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        'Error interno obteniendo el logo del equipo'
+                })
+            }
         }
     }
 )

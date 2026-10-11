@@ -142,6 +142,15 @@ function App() {
 
           rolId:
             data.usuario.rolId,
+
+          celular:
+            data.usuario.celular,
+
+          fechaRegistro:
+            data.usuario.fechaRegistro,
+
+          tieneFotoPerfil:
+            data.usuario.tieneFotoPerfil,
         })
 
 

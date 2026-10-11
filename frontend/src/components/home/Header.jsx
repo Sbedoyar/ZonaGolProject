@@ -6,6 +6,11 @@ import {
 
 import logo from '../../assets/logo.svg'
 
+import {
+  prepararRecargaWompi,
+  actualizarFotoPerfil,
+  obtenerFotoPerfil,
+} from '../../services/authService'
 
 function Header({
   usuario,
@@ -24,8 +29,31 @@ function Header({
     setPerfilAbierto,
   ] = useState(false)
 
+  const [
+    recargando,
+    setRecargando,
+  ] = useState(false)
+
+  const [
+    subiendoFoto,
+    setSubiendoFoto,
+  ] = useState(false)
+
+  const fotoInputRef =
+    useRef(null)
+
   const profileRef =
     useRef(null)
+
+  const [
+    fotoPerfilUrl,
+    setFotoPerfilUrl,
+  ] = useState(null)
+
+  const [
+    perfilModalAbierto,
+    setPerfilModalAbierto,
+  ] = useState(false)
 
 
   const saldoFormateado =
@@ -83,6 +111,296 @@ function Header({
     }
 
   }, [])
+
+  useEffect(() => {
+
+    let urlTemporal = null
+    let activo = true
+
+
+    const cargarFotoPerfil = async () => {
+
+      if (!usuario?.tieneFotoPerfil) {
+
+        setFotoPerfilUrl(null)
+
+        return
+      }
+
+
+      try {
+
+        const blob =
+          await obtenerFotoPerfil()
+
+
+        if (!activo) {
+          return
+        }
+
+
+        urlTemporal =
+          URL.createObjectURL(blob)
+
+
+        setFotoPerfilUrl(
+          urlTemporal
+        )
+
+      } catch (error) {
+
+        console.error(
+          'No fue posible cargar la foto de perfil:',
+          error
+        )
+
+
+        if (activo) {
+          setFotoPerfilUrl(null)
+        }
+      }
+    }
+
+
+    cargarFotoPerfil()
+
+
+    return () => {
+
+      activo = false
+
+
+      if (urlTemporal) {
+        URL.revokeObjectURL(
+          urlTemporal
+        )
+      }
+    }
+
+  }, [
+    usuario?.id,
+    usuario?.tieneFotoPerfil,
+  ])
+
+  const handleCambiarFoto = async (
+    event
+  ) => {
+
+    const archivo =
+      event.target.files?.[0]
+
+
+    if (!archivo) {
+      return
+    }
+
+
+    try {
+
+      setSubiendoFoto(true)
+
+
+      const resultado =
+        await actualizarFotoPerfil(
+          archivo
+        )
+
+
+      // Volver a obtener la foto recién actualizada.
+      const nuevoBlob =
+        await obtenerFotoPerfil()
+
+
+      const nuevaUrl =
+        URL.createObjectURL(
+          nuevoBlob
+        )
+
+
+      // Liberar la URL anterior para evitar
+      // mantener Blobs innecesarios en memoria.
+      setFotoPerfilUrl(
+        urlAnterior => {
+
+          if (urlAnterior) {
+            URL.revokeObjectURL(
+              urlAnterior
+            )
+          }
+
+          return nuevaUrl
+        }
+      )
+
+
+      if (onNotify) {
+        onNotify(
+          resultado.message ||
+            'Foto de perfil actualizada correctamente',
+          'success'
+        )
+      }
+
+
+    } catch (error) {
+
+      if (onNotify) {
+        onNotify(
+          error.message ||
+            'No fue posible actualizar la foto de perfil',
+          'error'
+        )
+      }
+
+    } finally {
+
+      setSubiendoFoto(false)
+
+
+      if (fotoInputRef.current) {
+        fotoInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleRecargar = async () => {
+
+    const valor =
+      window.prompt(
+        'Ingresa el monto que deseas recargar en pesos. Ejemplo: 50000'
+      )
+
+
+    if (valor === null) {
+      return
+    }
+
+
+    const monto =
+      Number(valor.trim())
+
+
+    if (
+      !Number.isFinite(monto) ||
+      monto <= 0
+    ) {
+
+      onNotify?.(
+        'Ingresa un monto de recarga válido.'
+      )
+
+      return
+    }
+
+
+    if (
+      typeof window.WidgetCheckout !==
+      'function'
+    ) {
+
+      onNotify?.(
+        'No fue posible cargar el checkout de Wompi.'
+      )
+
+      return
+    }
+
+
+    try {
+
+      setRecargando(true)
+
+
+      const respuesta =
+        await prepararRecargaWompi(
+          monto
+        )
+
+
+      const datos =
+        respuesta.datos
+
+
+      const checkout =
+        new window.WidgetCheckout({
+          currency:
+            datos.moneda,
+
+          amountInCents:
+            datos.montoEnCentavos,
+
+          reference:
+            datos.referencia,
+
+          publicKey:
+            datos.publicKey,
+
+          signature: {
+            integrity:
+              datos.firmaIntegridad,
+          },
+        })
+
+
+      checkout.open(
+        (resultado) => {
+
+          const transaccion =
+            resultado?.transaction
+
+
+          if (!transaccion) {
+
+            onNotify?.(
+              'El checkout de Wompi fue cerrado.'
+            )
+
+            return
+          }
+
+
+          console.log(
+            'Wompi - transacción recibida:',
+            {
+              id:
+                transaccion.id,
+
+              status:
+                transaccion.status,
+
+              reference:
+                transaccion.reference,
+            }
+          )
+
+
+          onNotify?.(
+            `Wompi respondió con estado: ${
+              transaccion.status ||
+              'desconocido'
+            }`
+          )
+        }
+      )
+
+    } catch (error) {
+
+      console.error(
+        'Error iniciando recarga Wompi:',
+        error
+      )
+
+
+      onNotify?.(
+        error.message ||
+        'No fue posible iniciar la recarga.'
+      )
+
+    } finally {
+
+      setRecargando(false)
+    }
+  }
 
 
   return (
@@ -301,13 +619,15 @@ function Header({
                 className="button button--gold button--small"
                 type="button"
 
-                onClick={() =>
-                  onNotify?.(
-                    'La recarga está lista para conectarse a un sistema de pagos.'
-                  )
+                disabled={recargando}
+
+                onClick={
+                  handleRecargar
                 }
               >
-                Recargar
+                {recargando
+                  ? 'Cargando...'
+                  : 'Recargar'}
               </button>
             </>
           )}
@@ -334,10 +654,17 @@ function Header({
             >
 
               <span>
-                {usuario?.correo
-                  ?.substring(0, 2)
-                  .toUpperCase() ||
-                  'US'}
+                {fotoPerfilUrl ? (
+                  <img
+                    src={fotoPerfilUrl}
+                    alt="Foto de perfil"
+                  />
+                ) : (
+                  usuario?.correo
+                    ?.substring(0, 2)
+                    .toUpperCase() ||
+                  'US'
+                )}
               </span>
 
 
@@ -355,18 +682,98 @@ function Header({
 
               <div className="profile-dropdown">
 
-                <strong>
-                  {usuario?.correo ||
-                    'Usuario'}
-                </strong>
+                <div className="profile-dropdown-header">
 
+                  <div className="profile-dropdown-avatar">
+                    {fotoPerfilUrl ? (
+                      <img
+                        src={fotoPerfilUrl}
+                        alt="Foto de perfil"
+                      />
+                    ) : (
+                      usuario?.correo
+                        ?.substring(0, 2)
+                        .toUpperCase() ||
+                      'US'
+                    )}
+                  </div>
 
-                <small>
-                  {rolNombre}
-                </small>
+                  <div className="profile-dropdown-info">
+
+                    <span className="profile-dropdown-label">
+                      MI CUENTA
+                    </span>
+
+                    <strong>
+                      {usuario?.correo ||
+                        'Usuario'}
+                    </strong>
+
+                    <small>
+                      {rolNombre}
+                    </small>
+
+                  </div>
+
+                </div>
+
+                <button
+                  type="button"
+                  className="profile-view"
+                  onClick={() => {
+                    setPerfilAbierto(false)
+                    setPerfilModalAbierto(true)
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="12"
+                      cy="8"
+                      r="4"
+                    />
+                    <path d="M4 21a8 8 0 0 1 16 0" />
+                  </svg>
+
+                  <span>Ver perfil</span>
+                </button>
 
 
                 <button
+                  type="button"
+                  className="profile-action"
+                  disabled={subiendoFoto}
+                  onClick={() => {
+                    fotoInputRef.current?.click()
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M14.5 4l1.4 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3.1l1.4-2h5z" />
+                    <circle
+                      cx="12"
+                      cy="12.5"
+                      r="3.5"
+                    />
+                  </svg>
+
+                  <span>
+                    {subiendoFoto
+                      ? 'Actualizando foto...'
+                      : 'Cambiar foto'}
+                  </span>
+                </button>
+
+
+                <div className="profile-dropdown-divider" />
+
+
+                <button
+                  className="profile-logout"
                   type="button"
 
                   onClick={() => {
@@ -386,7 +793,7 @@ function Header({
                     <path d="M10 17l5-5-5-5M15 12H3M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5" />
                   </svg>
 
-                  Cerrar sesión
+                  <span>Cerrar sesión</span>
 
                 </button>
 
@@ -398,6 +805,176 @@ function Header({
         </div>
 
       </header>
+
+      {perfilModalAbierto && (
+
+        <div
+          className="profile-modal-overlay"
+          onMouseDown={(event) => {
+
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setPerfilModalAbierto(false)
+            }
+
+          }}
+        >
+
+          <div
+            className="profile-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Perfil de usuario"
+          >
+
+            <button
+              type="button"
+              className="profile-modal-close"
+              aria-label="Cerrar perfil"
+              onClick={() =>
+                setPerfilModalAbierto(false)
+              }
+            >
+              ×
+            </button>
+
+
+            <div className="profile-modal-avatar">
+
+              {fotoPerfilUrl ? (
+
+                <img
+                  src={fotoPerfilUrl}
+                  alt="Foto de perfil"
+                />
+
+              ) : (
+
+                usuario?.correo
+                  ?.substring(0, 2)
+                  .toUpperCase() ||
+                'US'
+
+              )}
+
+            </div>
+
+
+            <span className="profile-modal-label">
+              MI PERFIL
+            </span>
+
+
+            <h2>
+              {usuario?.correo ||
+                'Usuario'}
+            </h2>
+
+
+            <span className="profile-modal-role">
+              {rolNombre}
+            </span>
+
+
+            <div className="profile-modal-info">
+
+              <div>
+                <span>Correo electrónico</span>
+
+                <strong>
+                  {usuario?.correo ||
+                    'No registrado'}
+                </strong>
+              </div>
+
+
+              <div>
+                <span>Celular</span>
+
+                <strong>
+                  {usuario?.celular ||
+                    'No registrado'}
+                </strong>
+              </div>
+
+
+              <div>
+                <span>Tipo de cuenta</span>
+
+                <strong>
+                  {rolNombre}
+                </strong>
+              </div>
+
+
+              <div>
+                <span>Miembro desde</span>
+
+                <strong>
+                  {usuario?.fechaRegistro
+                    ? new Date(
+                        usuario.fechaRegistro
+                      ).toLocaleDateString(
+                        'es-CO',
+                        {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                        }
+                      )
+                    : 'No disponible'}
+                </strong>
+              </div>
+
+            </div>
+
+
+            <button
+              type="button"
+              className="profile-modal-photo-button"
+              disabled={subiendoFoto}
+              onClick={() => {
+                fotoInputRef.current?.click()
+              }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M14.5 4l1.4 2H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3.1l1.4-2h5z" />
+
+                <circle
+                  cx="12"
+                  cy="12.5"
+                  r="3.5"
+                />
+              </svg>
+
+              <span>
+                {subiendoFoto
+                  ? 'Actualizando...'
+                  : 'Cambiar foto'}
+              </span>
+            </button>
+
+          </div>
+
+        </div>
+
+      )}
+      <input
+        ref={fotoInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{
+          display: 'none',
+        }}
+        onChange={
+          handleCambiarFoto
+        }
+      />
 
     </>
   )

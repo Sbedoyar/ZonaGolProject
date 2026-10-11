@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import CustomSelect from '../common/CustomSelect'
 import {
   obtenerPartidos,
   finalizarPartido,
@@ -34,6 +34,8 @@ function AdminPanel({ onNotify }) {
 
   const [cargandoEstadoSincronizacion, setCargandoEstadoSincronizacion] =
     useState(true);
+
+    
 
   // ============================================================
 
@@ -595,47 +597,53 @@ function AdminPanel({ onNotify }) {
           </p>
         </div>
 
-        <label className="admin-jornada">
-          <span>Temporada</span>
+        <CustomSelect
+          className="admin-season-custom-select"
+          label="Temporada"
+          value={temporadaSeleccionada}
+          ariaLabel="Seleccionar temporada"
+          options={[
+            {
+              value: 1,
+              label: '2026 · Académica',
+            },
+            {
+              value: 2,
+              label: '2024 · API-Football',
+            },
+          ]}
+          onChange={(nuevaTemporada) => {
+            setTemporadaSeleccionada(
+              Number(nuevaTemporada)
+            )
 
-          <select
-            value={temporadaSeleccionada}
-            onChange={(event) => {
-              const nuevaTemporada = Number(event.target.value);
+            setJornadaSeleccionada(1)
+          }}
+        />
 
-              setTemporadaSeleccionada(nuevaTemporada);
 
-              setJornadaSeleccionada(1);
-            }}
-          >
-            <option value={1}>2026 · Académica</option>
-
-            <option value={2}>2024 · API-Football</option>
-          </select>
-        </label>
-
-        <label className="admin-jornada">
-          <span>Jornada</span>
-
-          <select
-            value={jornadaSeleccionada}
-            onChange={(event) =>
-              setJornadaSeleccionada(Number(event.target.value))
-            }
-          >
-            {Array.from(
+        <CustomSelect
+          className="admin-round-custom-select"
+          label="Jornada"
+          value={jornadaSeleccionada}
+          ariaLabel="Seleccionar jornada"
+          options={
+            Array.from(
               {
                 length: cantidadJornadas,
               },
-
-              (_, index) => index + 1,
-            ).map((jornada) => (
-              <option key={jornada} value={jornada}>
-                Jornada {jornada}
-              </option>
-            ))}
-          </select>
-        </label>
+              (_, index) => ({
+                value: index + 1,
+                label: `Jornada ${index + 1}`,
+              })
+            )
+          }
+          onChange={(nuevaJornada) =>
+            setJornadaSeleccionada(
+              Number(nuevaJornada)
+            )
+          }
+        />
 
         {/* BOTÓN DE SINCRONIZACIÓN */}
 
@@ -811,17 +819,37 @@ function AdminPanel({ onNotify }) {
 
             const estado = partido.estadopartido ?? partido.estadoPartido ?? "";
 
-            const equipoLocal =
-              partido.equipolocal ?? partido.equipoLocal ?? "Local";
+           const equipoLocal =
+              partido.equipolocal ??
+              partido.equipoLocal ??
+              'Local'
 
             const equipoVisitante =
-              partido.equipovisitante ?? partido.equipoVisitante ?? "Visitante";
+              partido.equipovisitante ??
+              partido.equipoVisitante ??
+              'Visitante'
+
+            const equipoLocalId =
+              Number(
+                partido.equipolocalid ??
+                partido.equipoLocalId
+              )
+
+            const equipoVisitanteId =
+              Number(
+                partido.equipovisitanteid ??
+                partido.equipoVisitanteId
+              )
 
             const siglaLocal =
-              partido.siglalocal ?? partido.siglaLocal ?? "LOC";
+              partido.siglalocal ??
+              partido.siglaLocal ??
+              'LOC'
 
             const siglaVisitante =
-              partido.siglavisitante ?? partido.siglaVisitante ?? "VIS";
+              partido.siglavisitante ??
+              partido.siglaVisitante ??
+              'VIS'
 
             const fecha = partido.fechahorainicio ?? partido.fechaHoraInicio;
 
@@ -889,19 +917,41 @@ function AdminPanel({ onNotify }) {
                       ============================================ */}
 
                 <div className="admin-match-teams">
-                  <div className="admin-team">
-                    <span>{siglaLocal}</span>
 
-                    <strong>{equipoLocal}</strong>
+                  <div className="admin-team">
+
+                    <span>
+                      <img
+                        src={`http://localhost:5000/api/postgres/equipos/${equipoLocalId}/logo`}
+                        alt={`Escudo de ${equipoLocal}`}
+                      />
+                    </span>
+
+                    <strong>
+                      {equipoLocal}
+                    </strong>
+
                   </div>
 
-                  <div className="admin-versus">VS</div>
+                  <div className="admin-versus">
+                    VS
+                  </div>
 
                   <div className="admin-team admin-team--away">
-                    <span>{siglaVisitante}</span>
 
-                    <strong>{equipoVisitante}</strong>
+                    <span>
+                      <img
+                        src={`http://localhost:5000/api/postgres/equipos/${equipoVisitanteId}/logo`}
+                        alt={`Escudo de ${equipoVisitante}`}
+                      />
+                    </span>
+
+                    <strong>
+                      {equipoVisitante}
+                    </strong>
+
                   </div>
+
                 </div>
 
                 {/* ============================================
@@ -1020,12 +1070,12 @@ function AdminPanel({ onNotify }) {
                     </label>
 
                     <button
-                      className="button button--gold"
+                      className="button button--gold admin-liquidate-button"
                       type="button"
                       disabled={procesando}
                       onClick={() => handleFinalizar(partido)}
                     >
-                      {procesando ? "Procesando..." : "Finalizar y liquidar"}
+                      {procesando ? "Procesando..." : "Liquidar partido"}
                     </button>
                   </div>
                 )}
