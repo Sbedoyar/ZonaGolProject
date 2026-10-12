@@ -1,0 +1,205 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: zonagol-sqlserver
+
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+
+    ports:
+      - "1434:1433"
+
+    volumes:
+      - zonagol_sqlserver_data:/var/opt/mssql
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" > /dev/null || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    restart: unless-stopped
+
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: zonagol-sqlserver-init
+
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+    environment:
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+
+    volumes:
+      - ./docker/sqlserver/init:/init:ro
+
+    entrypoint: ["/bin/bash", "-c"]
+
+    command:
+      - >
+        /opt/mssql-tools18/bin/sqlcmd
+        -S sqlserver
+        -U sa
+        -P "$$MSSQL_SA_PASSWORD"
+        -C
+        -i /init/01-zonagol-auth.sql
+
+    restart: "no"
+
+  mongodb:
+    image: mongo:latest
+    container_name: zonagol-mongodb
+
+    ports:
+      - "27018:27017"
+
+    volumes:
+      - zonagol_mongodb_data:/data/db
+      - ./docker/mongodb/init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --eval \"quit(db.adminCommand('ping').ok ? 0 : 1)\""
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18
+    container_name: zonagol-postgres
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DOCKER_DATABASE}
+      POSTGRES_USER: ${POSTGRES_DOCKER_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_DOCKER_PASSWORD}
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - zonagol_postgres_data:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: zonagol-mysql
+    command: --lower-case-table-names=1
+
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DOCKER_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_DOCKER_ROOT_PASSWORD}
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - zonagol_mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h localhost -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+
+    container_name: zonagol-backend
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      DB_SERVER: sqlserver
+      DB_PORT: 1433
+      DB_NAME: ZonaGolAuth
+      DB_USER: sa
+      DB_PASSWORD: ${MSSQL_SA_PASSWORD}
+
+      MONGO_URI: mongodb://mongodb:27017
+
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: ${POSTGRES_DOCKER_DATABASE}
+      POSTGRES_USER: ${POSTGRES_DOCKER_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_DOCKER_PASSWORD}
+
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DOCKER_DATABASE}
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_DOCKER_ROOT_PASSWORD}
+
+    ports:
+      - "5000:5000"
+
+    depends_on:
+      sqlserver-init:
+        condition: service_completed_successfully
+      mongodb:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+
+    container_name: zonagol-frontend
+
+    env_file:
+      - ./frontend/.env
+
+    ports:
+      - "5173:5173"
+
+    depends_on:
+      - backend
+
+    restart: unless-stopped
+
+volumes:
+  zonagol_sqlserver_data:
+  zonagol_mongodb_data:
+  zonagol_postgres_data:
+  zonagol_mysql_data:
