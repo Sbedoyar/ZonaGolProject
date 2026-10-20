@@ -30,3 +30,6 @@ zonagol_mongo_dump/
 # Logs
 *.log
 npm-debug.log*
+
+# Credenciales privadas
+backend/secrets/

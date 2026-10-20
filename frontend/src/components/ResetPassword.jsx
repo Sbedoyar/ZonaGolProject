@@ -50,6 +50,16 @@ function ResetPassword({
   const [actualizada, setActualizada] =
     useState(false)
 
+  const [
+    mostrarPassword,
+    setMostrarPassword,
+  ] = useState(false)
+
+  const [
+    mostrarConfirmarPassword,
+    setMostrarConfirmarPassword,
+  ] = useState(false)
+
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -310,7 +320,11 @@ function ResetPassword({
 
 
                   <input
-                    type="password"
+                    type={
+                      mostrarPassword
+                        ? 'text'
+                        : 'password'
+                    }
                     value={password}
                     onChange={(event) => {
                       setPassword(
@@ -322,6 +336,41 @@ function ResetPassword({
                     placeholder="Mínimo 6 caracteres"
                     autoComplete="new-password"
                   />
+
+                  <button
+                    type="button"
+                    className="field-action"
+                    onClick={() => {
+                      setMostrarPassword(
+                        !mostrarPassword
+                      )
+                    }}
+                    aria-label={
+                      mostrarPassword
+                        ? 'Ocultar contraseña'
+                        : 'Mostrar contraseña'
+                    }
+                  >
+                    {mostrarPassword ? (
+                      <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    ) : (
+                      <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                        <path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c5.5 0 9 8 9 8a16.8 16.8 0 0 1-2.1 3.2" />
+                        <path d="M6.6 6.6C4.3 8.1 3 12 3 12s3.5 8 9 8a9.8 9.8 0 0 0 4.1-.9" />
+                      </svg>
+                    )}
+                  </button>
 
                 </span>
 
@@ -362,7 +411,11 @@ function ResetPassword({
 
 
                   <input
-                    type="password"
+                    type={
+                      mostrarConfirmarPassword
+                        ? 'text'
+                        : 'password'
+                    }
                     value={confirmarPassword}
                     onChange={(event) => {
                       setConfirmarPassword(
@@ -374,6 +427,41 @@ function ResetPassword({
                     placeholder="Repite tu contraseña"
                     autoComplete="new-password"
                   />
+
+                  <button
+                    type="button"
+                    className="field-action"
+                    onClick={() => {
+                      setMostrarConfirmarPassword(
+                        !mostrarConfirmarPassword
+                      )
+                    }}
+                    aria-label={
+                      mostrarConfirmarPassword
+                        ? 'Ocultar contraseña'
+                        : 'Mostrar contraseña'
+                    }
+                  >
+                    {mostrarConfirmarPassword ? (
+                      <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    ) : (
+                      <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                        <path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c5.5 0 9 8 9 8a16.8 16.8 0 0 1-2.1 3.2" />
+                        <path d="M6.6 6.6C4.3 8.1 3 12 3 12s3.5 8 9 8a9.8 9.8 0 0 0 4.1-.9" />
+                      </svg>
+                    )}
+                  </button>
 
                 </span>
 

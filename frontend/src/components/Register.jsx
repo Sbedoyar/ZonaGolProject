@@ -420,8 +420,6 @@ function Register({
                 form.password,
             })
         }
-
-
         onRegister(
           data.usuario
         )

@@ -77,7 +77,10 @@ router.post('/login/google', async (req, res) => {
                         IE.Estado AS IdentidadEstado,
                         U.Correo,
                         U.RolId,
-                        U.Estado AS UsuarioEstado
+                        U.Estado AS UsuarioEstado,
+                        U.Celular,
+                        U.FechaRegistro,
+                        U.FotoPerfilDriveId
 
                     FROM IdentidadExterna AS IE
 
@@ -183,14 +186,15 @@ router.post('/login/google', async (req, res) => {
                 token,
 
                 usuario: {
-                    id:
-                        usuario.UsuarioId,
-
-                    correo:
-                        usuario.Correo,
-
-                    rolId:
-                        usuario.RolId
+                    id: usuario.UsuarioId,
+                    correo: usuario.Correo,
+                    rolId: usuario.RolId,
+                    celular: usuario.Celular,
+                    fechaRegistro: usuario.FechaRegistro,
+                    tieneFotoPerfil:
+                        Boolean(
+                            usuario.FotoPerfilDriveId
+                        )
                 }
             })
         }
@@ -918,6 +922,26 @@ router.post('/registro/google', async (req, res) => {
             ]
         )
 
+        // =====================================================
+        // CREAR SALDO INICIAL DEL CLIENTE
+        // =====================================================
+
+        await mysqlConnection.execute(
+            `
+                INSERT INTO Saldo
+                (
+                    UsuarioId
+                )
+                VALUES
+                (
+                    ?
+                )
+            `,
+            [
+                usuarioId
+            ]
+        )
+
 
         // =====================================================
         // CONFIRMAR MYSQL
@@ -938,6 +962,48 @@ router.post('/registro/google', async (req, res) => {
         await sqlTransaction.commit()
 
         sqlCommitted = true
+
+
+        // =====================================================
+        // OBTENER DATOS FINALES DEL USUARIO
+        // =====================================================
+
+        const usuarioCreado =
+            await sqlPool
+                .request()
+                .input(
+                    'usuarioId',
+                    sql.Int,
+                    usuarioId
+                )
+                .query(`
+                    SELECT
+                        Celular,
+                        FechaRegistro,
+                        FotoPerfilDriveId
+                    FROM Usuario
+                    WHERE UsuarioId = @usuarioId
+                `)
+
+
+        const celularRegistrado =
+            usuarioCreado
+                .recordset[0]
+                .Celular
+
+
+        const fechaRegistro =
+            usuarioCreado
+                .recordset[0]
+                .FechaRegistro
+
+
+        const tieneFotoPerfil =
+            Boolean(
+                usuarioCreado
+                    .recordset[0]
+                    .FotoPerfilDriveId
+            )
 
 
         // =====================================================
@@ -985,7 +1051,14 @@ router.post('/registro/google', async (req, res) => {
                     correoNormalizado,
 
                 rolId:
-                    rolId
+                    rolId,
+
+                celular:
+                    celularRegistrado,
+
+                fechaRegistro,
+
+                tieneFotoPerfil
             }
         })
 

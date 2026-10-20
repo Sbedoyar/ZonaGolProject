@@ -27,6 +27,7 @@ services:
 
     restart: unless-stopped
 
+
   sqlserver-init:
     image: mcr.microsoft.com/mssql/server:2025-latest
     container_name: zonagol-sqlserver-init
@@ -54,6 +55,7 @@ services:
 
     restart: "no"
 
+
   mongodb:
     image: mongo:latest
     container_name: zonagol-mongodb
@@ -77,6 +79,7 @@ services:
       start_period: 20s
 
     restart: unless-stopped
+
 
   postgres:
     image: postgres:18
@@ -107,6 +110,7 @@ services:
 
     restart: unless-stopped
 
+
   mysql:
     image: mysql:8.0
     container_name: zonagol-mysql
@@ -135,6 +139,7 @@ services:
       start_period: 30s
 
     restart: unless-stopped
+
 
   backend:
     build:
@@ -166,6 +171,12 @@ services:
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_DOCKER_ROOT_PASSWORD}
 
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-zonagol.json
+
+    volumes:
+      - ./backend/secrets/firebase-zonagol.json:/run/secrets/firebase-zonagol.json:ro
+      - ./backend/.env:/app/.env
+
     ports:
       - "5000:5000"
 
@@ -180,6 +191,7 @@ services:
         condition: service_healthy
 
     restart: unless-stopped
+
 
   frontend:
     build:
@@ -197,6 +209,7 @@ services:
       - backend
 
     restart: unless-stopped
+
 
 volumes:
   zonagol_sqlserver_data:

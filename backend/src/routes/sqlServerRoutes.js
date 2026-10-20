@@ -110,6 +110,9 @@ router.post('/login', async (req, res) => {
                         U.Correo,
                         U.RolId,
                         U.Estado,
+                        U.Celular,
+                        U.FechaRegistro,
+                        U.FotoPerfilDriveId,
 
                         L.PasswordHash,
                         L.IntentosFallidos,
@@ -551,14 +554,15 @@ router.post('/login', async (req, res) => {
             token,
 
             usuario: {
-                id:
-                    usuario.UsuarioId,
-
-                correo:
-                    usuario.Correo,
-
-                rolId:
-                    usuario.RolId
+                id: usuario.UsuarioId,
+                correo: usuario.Correo,
+                rolId: usuario.RolId,
+                celular: usuario.Celular,
+                fechaRegistro: usuario.FechaRegistro,
+                tieneFotoPerfil:
+                    Boolean(
+                        usuario.FotoPerfilDriveId
+                    )
             }
         })
 
@@ -1020,6 +1024,26 @@ router.post('/registro', async (req, res) => {
             ]
         )
 
+        // =====================================================
+        // CREAR SALDO INICIAL DEL CLIENTE
+        // =====================================================
+
+        await mysqlConnection.execute(
+            `
+                INSERT INTO Saldo
+                (
+                    UsuarioId
+                )
+                VALUES
+                (
+                    ?
+                )
+            `,
+            [
+                usuarioId
+            ]
+        )
+
 
         // =====================================================
         // CONFIRMAR MYSQL
@@ -1039,8 +1063,50 @@ router.post('/registro', async (req, res) => {
         sqlCommitted = true
 
         // =====================================================
+        // OBTENER DATOS FINALES DEL USUARIO
+        // =====================================================
+
+        const usuarioCreado =
+            await sqlPool
+                .request()
+                .input(
+                    'usuarioId',
+                    sql.Int,
+                    usuarioId
+                )
+                .query(`
+                    SELECT
+                        Celular,
+                        FechaRegistro,
+                        FotoPerfilDriveId
+                    FROM Usuario
+                    WHERE UsuarioId = @usuarioId
+                `)
+
+
+        const celularRegistrado =
+            usuarioCreado
+                .recordset[0]
+                .Celular
+
+
+        const fechaRegistro =
+            usuarioCreado
+                .recordset[0]
+                .FechaRegistro
+
+
+        const tieneFotoPerfil =
+            Boolean(
+                usuarioCreado
+                    .recordset[0]
+                    .FotoPerfilDriveId
+            )
+
+        // =====================================================
         // GENERAR JWT PARA EL USUARIO RECIÉN REGISTRADO
         // =====================================================
+
 
         const token =
             jwt.sign(
@@ -1080,7 +1146,14 @@ router.post('/registro', async (req, res) => {
                     correoNormalizado,
 
                 rolId:
-                    rolId
+                    rolId,
+
+                celular:
+                    celularRegistrado,
+
+                fechaRegistro,
+
+                tieneFotoPerfil
             }
         })
 

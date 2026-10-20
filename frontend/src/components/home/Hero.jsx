@@ -33,11 +33,11 @@ function Hero() {
           id="hero-bet"
           className="button button--gold"
           type="button"
-            onClick={() => {
-                document
-                    .getElementById('partidos')
-                    ?.scrollIntoView({ behavior: 'smooth' })
-            }}
+          onClick={() => {
+            document
+              .getElementById('partidos')
+              ?.scrollIntoView({ behavior: 'smooth' })
+          }}
         >
           Ver cuotas
 
@@ -53,7 +53,10 @@ function Hero() {
       >
         <div className="hero-team">
           <span className="team-crest team-crest--green">
-            NAL
+            <img
+              src="http://localhost:5000/api/postgres/equipos/1/logo"
+              alt="Escudo de Atlético Nacional"
+            />
           </span>
 
           <strong>
@@ -73,7 +76,10 @@ function Hero() {
 
         <div className="hero-team">
           <span className="team-crest team-crest--blue">
-            MIL
+            <img
+              src="http://localhost:5000/api/postgres/equipos/2/logo"
+              alt="Escudo de Millonarios F.C."
+            />
           </span>
 
           <strong>

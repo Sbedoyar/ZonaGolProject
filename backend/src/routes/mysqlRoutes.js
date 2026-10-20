@@ -8,63 +8,111 @@ const {
     autorizarRoles
 } = require('../middlewares/roleMiddleware')
 
-router.get('/empleados', async (req, res) => {
-    try {
-        const [empleados] = await mysqlPool.query(
-            'SELECT * FROM empleado'
-        )
+// ============================================================
+// CRUD DE EMPLEADOS
+//
+// SEGURIDAD:
+// Solo ADMINISTRADOR
+// RolId = 1
+// ============================================================
 
-        res.json(empleados)
-    } catch (error) {
-        console.error(error)
 
-        res.status(500).json({
-            mensaje: 'Error consultando empleados en MySQL'
-        })
-    }
-})
+// ============================================================
+// LISTAR EMPLEADOS
+// ============================================================
 
-router.get('/empleados/:documento', async (req, res) => {
-    try {
-        const [filas] = await mysqlPool.query(
-            'SELECT * FROM empleado WHERE documento = ?',
-            [req.params.documento]
-        )
+router.get(
+    '/empleados',
+    verificarToken,
+    autorizarRoles(1),
+    async (req, res) => {
 
-        if (filas.length === 0) {
-            return res.status(404).json({
-                mensaje: 'Empleado no encontrado'
+        try {
+
+            const [empleados] =
+                await mysqlPool.query(
+                    'SELECT * FROM empleado'
+                )
+
+            return res.status(200).json(
+                empleados
+            )
+
+        } catch (error) {
+
+            console.error(error)
+
+            return res.status(500).json({
+                mensaje:
+                    'Error consultando empleados en MySQL'
             })
         }
-
-        res.json(filas[0])
-
-    } catch (error) {
-        console.error(error)
-
-        res.status(500).json({
-            mensaje: 'Error consultando empleado'
-        })
     }
-})
+)
 
-router.post('/empleados', async (req, res) => {
-    try {
-        const {
-            documento,
-            tipo_documento,
-            nombres,
-            apellidos,
-            correo,
-            fecha_nacimiento,
-            salario
-        } = req.body
 
-        await mysqlPool.query(
-            `INSERT INTO empleado
-            (documento, tipo_documento, nombres, apellidos, correo, fecha_nacimiento, salario)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
+// ============================================================
+// CONSULTAR EMPLEADO POR DOCUMENTO
+// ============================================================
+
+router.get(
+    '/empleados/:documento',
+    verificarToken,
+    autorizarRoles(1),
+    async (req, res) => {
+
+        try {
+
+            const [filas] =
+                await mysqlPool.query(
+                    `
+                    SELECT *
+                    FROM empleado
+                    WHERE documento = ?
+                    `,
+                    [
+                        req.params.documento
+                    ]
+                )
+
+            if (filas.length === 0) {
+
+                return res.status(404).json({
+                    mensaje:
+                        'Empleado no encontrado'
+                })
+            }
+
+            return res.status(200).json(
+                filas[0]
+            )
+
+        } catch (error) {
+
+            console.error(error)
+
+            return res.status(500).json({
+                mensaje:
+                    'Error consultando empleado'
+            })
+        }
+    }
+)
+
+
+// ============================================================
+// CREAR EMPLEADO
+// ============================================================
+
+router.post(
+    '/empleados',
+    verificarToken,
+    autorizarRoles(1),
+    async (req, res) => {
+
+        try {
+
+            const {
                 documento,
                 tipo_documento,
                 nombres,
@@ -72,88 +120,170 @@ router.post('/empleados', async (req, res) => {
                 correo,
                 fecha_nacimiento,
                 salario
-            ]
-        )
+            } = req.body
 
-        res.status(201).json({
-            mensaje: 'Empleado creado correctamente'
-        })
+            await mysqlPool.query(
+                `
+                INSERT INTO empleado
+                (
+                    documento,
+                    tipo_documento,
+                    nombres,
+                    apellidos,
+                    correo,
+                    fecha_nacimiento,
+                    salario
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                `,
+                [
+                    documento,
+                    tipo_documento,
+                    nombres,
+                    apellidos,
+                    correo,
+                    fecha_nacimiento,
+                    salario
+                ]
+            )
 
-    } catch (error) {
-        console.error(error)
+            return res.status(201).json({
+                mensaje:
+                    'Empleado creado correctamente'
+            })
 
-        res.status(500).json({
-            mensaje: 'Error creando empleado'
-        })
+        } catch (error) {
+
+            console.error(error)
+
+            return res.status(500).json({
+                mensaje:
+                    'Error creando empleado'
+            })
+        }
     }
-})
+)
 
-router.put('/empleados/:documento', async (req, res) => {
-    try {
-        const {
-            nombres,
-            apellidos,
-            correo,
-            salario
-        } = req.body
 
-        const [resultado] = await mysqlPool.query(
-            `UPDATE empleado
-            SET nombres = ?, apellidos = ?, correo = ?, salario = ?
-            WHERE documento = ?`,
-            [
+// ============================================================
+// ACTUALIZAR EMPLEADO
+// ============================================================
+
+router.put(
+    '/empleados/:documento',
+    verificarToken,
+    autorizarRoles(1),
+    async (req, res) => {
+
+        try {
+
+            const {
                 nombres,
                 apellidos,
                 correo,
-                salario,
-                req.params.documento
-            ]
-        )
+                salario
+            } = req.body
 
-        if (resultado.affectedRows === 0) {
-            return res.status(404).json({
-                mensaje: 'Empleado no encontrado'
+            const [resultado] =
+                await mysqlPool.query(
+                    `
+                    UPDATE empleado
+
+                    SET
+                        nombres = ?,
+                        apellidos = ?,
+                        correo = ?,
+                        salario = ?
+
+                    WHERE documento = ?
+                    `,
+                    [
+                        nombres,
+                        apellidos,
+                        correo,
+                        salario,
+                        req.params.documento
+                    ]
+                )
+
+            if (
+                resultado.affectedRows === 0
+            ) {
+
+                return res.status(404).json({
+                    mensaje:
+                        'Empleado no encontrado'
+                })
+            }
+
+            return res.status(200).json({
+                mensaje:
+                    'Empleado actualizado correctamente'
+            })
+
+        } catch (error) {
+
+            console.error(error)
+
+            return res.status(500).json({
+                mensaje:
+                    'Error actualizando empleado'
             })
         }
-
-        res.json({
-            mensaje: 'Empleado actualizado correctamente'
-        })
-
-    } catch (error) {
-        console.error(error)
-
-        res.status(500).json({
-            mensaje: 'Error actualizando empleado'
-        })
     }
-})
+)
 
-router.delete('/empleados/:documento', async (req, res) => {
-    try {
-        const [resultado] = await mysqlPool.query(
-            'DELETE FROM empleado WHERE documento = ?',
-            [req.params.documento]
-        )
 
-        if (resultado.affectedRows === 0) {
-            return res.status(404).json({
-                mensaje: 'Empleado no encontrado'
+// ============================================================
+// ELIMINAR EMPLEADO
+// ============================================================
+
+router.delete(
+    '/empleados/:documento',
+    verificarToken,
+    autorizarRoles(1),
+    async (req, res) => {
+
+        try {
+
+            const [resultado] =
+                await mysqlPool.query(
+                    `
+                    DELETE FROM empleado
+                    WHERE documento = ?
+                    `,
+                    [
+                        req.params.documento
+                    ]
+                )
+
+            if (
+                resultado.affectedRows === 0
+            ) {
+
+                return res.status(404).json({
+                    mensaje:
+                        'Empleado no encontrado'
+                })
+            }
+
+            return res.status(200).json({
+                mensaje:
+                    'Empleado eliminado correctamente'
+            })
+
+        } catch (error) {
+
+            console.error(error)
+
+            return res.status(500).json({
+                mensaje:
+                    'Error eliminando empleado'
             })
         }
-
-        res.json({
-            mensaje: 'Empleado eliminado correctamente'
-        })
-
-    } catch (error) {
-        console.error(error)
-
-        res.status(500).json({
-            mensaje: 'Error eliminando empleado'
-        })
     }
-})
+)
+
 
 // ============================================================
 // CREAR APUESTA
@@ -626,14 +756,6 @@ router.post(
                     saldoFinalResult[0]
                         .SaldoDisponible
                 )
-
-
-            // =================================================
-            // 11. CONFIRMAR TODO
-            // =================================================
-
-            await connection.commit()
-
 
             // =====================================================
             // 11. CONFIRMAR TODO

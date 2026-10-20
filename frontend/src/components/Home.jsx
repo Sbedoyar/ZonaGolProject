@@ -236,6 +236,10 @@ function Home({
           saldoDisponible
         }
 
+        onSaldoActualizado={
+          setSaldoDisponible
+        }
+
         vista={
           vista
         }

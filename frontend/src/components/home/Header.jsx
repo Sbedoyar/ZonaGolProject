@@ -10,6 +10,7 @@ import {
   prepararRecargaWompi,
   actualizarFotoPerfil,
   obtenerFotoPerfil,
+  obtenerSaldo,
 } from '../../services/authService'
 
 function Header({
@@ -19,6 +20,7 @@ function Header({
   onSearchChange,
   onNotify,
   saldoDisponible,
+  onSaldoActualizado,
   vista,
   onVerInicio,
   onVerMisApuestas,
@@ -380,6 +382,37 @@ function Header({
               'desconocido'
             }`
           )
+          if (
+            transaccion.status ===
+            'APPROVED'
+          ) {
+
+            setTimeout(
+              async () => {
+
+                try {
+
+                  const respuestaSaldo =
+                    await obtenerSaldo()
+
+
+                  onSaldoActualizado?.(
+                    respuestaSaldo.datos
+                      .saldoDisponible
+                  )
+
+                } catch (error) {
+
+                  console.error(
+                    'Error actualizando saldo después de Wompi:',
+                    error
+                  )
+                }
+
+              },
+              1500
+            )
+          }
         }
       )
 
