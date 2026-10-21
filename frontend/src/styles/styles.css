@@ -3163,3 +3163,319 @@ a:focus-visible {
   stroke-linejoin: round;
 }
 
+/* =========================
+   MODAL DE RECARGA
+   ========================= */
+
+.recharge-modal-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(6, 26, 48, .62);
+  backdrop-filter: blur(6px);
+  animation: rechargeFadeIn 180ms ease;
+}
+
+.recharge-modal {
+  position: relative;
+  width: min(100%, 480px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border: 1px solid rgba(220, 229, 237, .9);
+  border-radius: var(--radius-xl);
+  padding: 34px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: rechargeSlideIn 220ms ease;
+}
+
+.recharge-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--background);
+  color: var(--muted);
+  font-size: 1.45rem;
+  line-height: 1;
+  transition:
+    background var(--transition),
+    color var(--transition),
+    transform var(--transition);
+}
+
+.recharge-modal-close:hover {
+  background: var(--line);
+  color: var(--navy-900);
+  transform: rotate(4deg);
+}
+
+.recharge-modal-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+  border-radius: 18px;
+  background:
+    linear-gradient(
+      135deg,
+      var(--emerald-600),
+      var(--emerald-500)
+    );
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(7, 155, 98, .22);
+  font-size: 1.65rem;
+  font-weight: 900;
+}
+
+.recharge-modal-heading {
+  padding-right: 38px;
+}
+
+.recharge-modal-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--emerald-700);
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.recharge-modal-heading h2 {
+  color: var(--navy-950);
+  font-size: 1.65rem;
+  line-height: 1.15;
+  letter-spacing: -.035em;
+}
+
+.recharge-modal-heading p {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: .91rem;
+  line-height: 1.55;
+}
+
+.recharge-modal-field {
+  margin-top: 26px;
+}
+
+.recharge-modal-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--navy-900);
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.recharge-modal-input {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  padding: 0 16px;
+  background: var(--background-soft);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background var(--transition);
+}
+
+.recharge-modal-input:focus-within {
+  border-color: var(--emerald-600);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(7, 155, 98, .1);
+}
+
+.recharge-modal-input > span {
+  color: var(--emerald-700);
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.recharge-modal-input input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--navy-950);
+  font-size: 1.18rem;
+  font-weight: 800;
+}
+
+.recharge-modal-input input::placeholder {
+  color: var(--faint);
+}
+
+.recharge-modal-input strong {
+  color: var(--muted);
+  font-size: .72rem;
+  letter-spacing: .06em;
+}
+
+.recharge-modal-quick {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+  margin-top: 11px;
+}
+
+.recharge-modal-quick button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--navy-800);
+  font-size: .78rem;
+  font-weight: 800;
+  transition: all var(--transition);
+}
+
+.recharge-modal-quick button:hover {
+  border-color: var(--emerald-500);
+  background: var(--emerald-100);
+  color: var(--emerald-700);
+}
+
+.recharge-modal-quick button.active {
+  border-color: var(--emerald-600);
+  background: var(--emerald-100);
+  color: var(--emerald-700);
+  box-shadow: inset 0 0 0 1px var(--emerald-600);
+}
+
+.recharge-modal-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 22px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 16px 2px;
+}
+
+.recharge-modal-summary span {
+  color: var(--muted);
+  font-size: .83rem;
+}
+
+.recharge-modal-summary strong {
+  color: var(--navy-950);
+  font-size: 1rem;
+}
+
+.recharge-modal-actions {
+  display: grid;
+  grid-template-columns: .8fr 1.4fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.recharge-modal-actions button {
+  min-height: 48px;
+  border-radius: var(--radius-md);
+  font-size: .84rem;
+  font-weight: 900;
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    background var(--transition);
+}
+
+.recharge-modal-cancel {
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  color: var(--navy-800);
+}
+
+.recharge-modal-cancel:hover {
+  background: var(--background);
+}
+
+.recharge-modal-continue {
+  border: 1px solid var(--gold-500);
+  background:
+    linear-gradient(
+      135deg,
+      var(--gold-400),
+      var(--gold-500)
+    );
+  color: var(--navy-950);
+  box-shadow: 0 8px 20px rgba(245, 189, 37, .2);
+}
+
+.recharge-modal-continue:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 11px 25px rgba(245, 189, 37, .28);
+}
+
+.recharge-modal-actions button:disabled,
+.recharge-modal-close:disabled,
+.recharge-modal-quick button:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+.recharge-modal-security {
+  margin-top: 15px;
+  color: var(--faint);
+  font-size: .72rem;
+  text-align: center;
+}
+
+@keyframes rechargeFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rechargeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 560px) {
+  .recharge-modal-overlay {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .recharge-modal {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    border-radius: 24px;
+    padding: 28px 20px 22px;
+  }
+
+  .recharge-modal-quick {
+    grid-template-columns: 1fr;
+  }
+
+  .recharge-modal-actions {
+    grid-template-columns: 1fr;
+  }
+}

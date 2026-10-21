@@ -37,6 +37,16 @@ function Header({
   ] = useState(false)
 
   const [
+    recargaModalAbierto,
+    setRecargaModalAbierto,
+  ] = useState(false)
+
+  const [
+    montoRecarga,
+    setMontoRecarga,
+  ] = useState('')
+
+  const [
     subiendoFoto,
     setSubiendoFoto,
   ] = useState(false)
@@ -267,19 +277,8 @@ function Header({
 
   const handleRecargar = async () => {
 
-    const valor =
-      window.prompt(
-        'Ingresa el monto que deseas recargar en pesos. Ejemplo: 50000'
-      )
-
-
-    if (valor === null) {
-      return
-    }
-
-
     const monto =
-      Number(valor.trim())
+      Number(montoRecarga)
 
 
     if (
@@ -322,6 +321,7 @@ function Header({
       const datos =
         respuesta.datos
 
+      setRecargaModalAbierto(false)
 
       const checkout =
         new window.WidgetCheckout({
@@ -654,9 +654,10 @@ function Header({
 
                 disabled={recargando}
 
-                onClick={
-                  handleRecargar
-                }
+               onClick={() => {
+                setMontoRecarga('')
+                setRecargaModalAbierto(true)
+              }}
               >
                 {recargando
                   ? 'Cargando...'
@@ -997,6 +998,147 @@ function Header({
         </div>
 
       )}
+
+            {recargaModalAbierto && (
+        <div
+          className="recharge-modal-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !recargando) {
+              setRecargaModalAbierto(false)
+            }
+          }}
+        >
+          <div
+            className="recharge-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="recharge-modal-title"
+          >
+            <button
+              type="button"
+              className="recharge-modal-close"
+              aria-label="Cerrar"
+              disabled={recargando}
+              onClick={() => {
+                setRecargaModalAbierto(false)
+              }}
+            >
+              ×
+            </button>
+
+            <div className="recharge-modal-icon">
+              $
+            </div>
+
+            <div className="recharge-modal-heading">
+              <span className="recharge-modal-eyebrow">
+                ZONAGOL
+              </span>
+
+              <h2 id="recharge-modal-title">
+                Recargar saldo
+              </h2>
+
+              <p>
+                Elige cuánto quieres agregar a tu saldo.
+                El pago se procesará de forma segura con Wompi.
+              </p>
+            </div>
+
+            <div className="recharge-modal-field">
+              <label htmlFor="monto-recarga">
+                Monto a recargar
+              </label>
+
+              <div className="recharge-modal-input">
+                <span>$</span>
+
+                <input
+                  id="monto-recarga"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="50.000"
+                  value={
+                    montoRecarga
+                      ? Number(montoRecarga).toLocaleString('es-CO')
+                      : ''
+                  }
+                  disabled={recargando}
+                  onChange={(event) => {
+                    const soloNumeros =
+                      event.target.value.replace(/\D/g, '')
+
+                    setMontoRecarga(soloNumeros)
+                  }}
+                />
+
+                <strong>COP</strong>
+              </div>
+            </div>
+
+            <div className="recharge-modal-quick">
+              {[10000, 20000, 50000].map((monto) => (
+                <button
+                  key={monto}
+                  type="button"
+                  disabled={recargando}
+                  className={
+                    Number(montoRecarga) === monto
+                      ? 'active'
+                      : ''
+                  }
+                  onClick={() => {
+                    setMontoRecarga(String(monto))
+                  }}
+                >
+                  ${monto.toLocaleString('es-CO')}
+                </button>
+              ))}
+            </div>
+
+            <div className="recharge-modal-summary">
+              <span>Valor de la recarga</span>
+
+              <strong>
+                {montoRecarga && Number(montoRecarga) > 0
+                  ? `$${Number(montoRecarga).toLocaleString('es-CO')} COP`
+                  : '$0 COP'}
+              </strong>
+            </div>
+
+            <div className="recharge-modal-actions">
+              <button
+                type="button"
+                className="recharge-modal-cancel"
+                disabled={recargando}
+                onClick={() => {
+                  setRecargaModalAbierto(false)
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className="recharge-modal-continue"
+                disabled={recargando}
+                onClick={handleRecargar}
+              >
+                {recargando
+                  ? 'Preparando pago...'
+                  : 'Continuar con Wompi'}
+              </button>
+            </div>
+
+            <p className="recharge-modal-security">
+              Pago procesado de forma segura por Wompi
+            </p>
+          </div>
+        </div>
+      )}
+
       <input
         ref={fotoInputRef}
         type="file"
