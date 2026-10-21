@@ -1,0 +1,35 @@
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+!.env.docker.example
+
+backend/.env
+frontend/.env
+.env.docker
+
+# Dependencias
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Builds
+dist/
+frontend/dist/
+
+# Credenciales de Google
+backend/google-drive-service-account.json
+
+# Backups temporales usados para Docker
+ZonaGolAuth.bak
+zonagol_postgres.dump
+zonagol_negocio.sql
+zonagol_mongo_dump/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Credenciales privadas
+backend/secrets/

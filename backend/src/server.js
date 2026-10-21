@@ -1,11 +1,84 @@
 const express = require('express')
 const cors = require('cors')
-const { sql, poolPromise } = require('./database')
+
+// RUTAS
+const sqlServerRoutes = require('./routes/sqlServerRoutes')
+const googleAuthRoutes = require('./routes/googleAuthRoutes')
+const mysqlRoutes = require('./routes/mysqlRoutes')
+const mongoRoutes = require('./routes/mongoRoutes')
+const firebaseRoutes = require('./routes/firebaseRoutes')
+const postgresRoutes = require('./routes/postgresRoutes')
+const sportsSyncRoutes = require('./routes/sportsSyncRoutes')
+const googleDriveRoutes =  require('./routes/googleDriveRoutes')
+
+// CONEXIONES
+const {
+    connectMongo
+} = require('./databases/mongoDatabase')
+
+const {
+    testPostgresConnection
+} = require('./databases/postgresDatabase')
+
+// SCHEDULER DEPORTIVO
+const {
+    iniciarSportsScheduler
+} = require('./schedulers/sportsScheduler')
+
+const wompiRoutes =
+    require('./routes/wompiRoutes')
 
 const app = express()
 
+
+// =====================================
+// MIDDLEWARES
+// =====================================
+
 app.use(cors())
 app.use(express.json())
+
+
+// =====================================
+// RUTAS
+// =====================================
+
+// SQL SERVER / AUTENTICACIÓN TRADICIONAL
+app.use('/api', sqlServerRoutes)
+
+// GOOGLE SSO
+app.use('/api', googleAuthRoutes)
+
+// GOOGLE DRIVE
+app.use('/api/google-drive', googleDriveRoutes)
+
+// MYSQL
+app.use('/api/mysql', mysqlRoutes)
+
+// MONGODB
+app.use('/api/mongo', mongoRoutes)
+
+// FIREBASE / FIRESTORE
+app.use('/api/firebase', firebaseRoutes)
+
+// POSTGRESQL
+app.use('/api/postgres', postgresRoutes)
+
+// SINCRONIZACIÓN DEPORTIVA
+app.use(
+    '/api/sports-sync',
+    sportsSyncRoutes
+)
+
+// WOMPI / RECARGAS
+app.use(
+    '/api/pagos/wompi',
+    wompiRoutes
+)
+
+// =====================================
+// PRUEBA DEL BACKEND
+// =====================================
 
 app.get('/api/health', (req, res) => {
     res.json({
@@ -13,31 +86,54 @@ app.get('/api/health', (req, res) => {
     })
 })
 
-app.get('/api/users', async (req, res) => {
-    try {
-        const pool = await poolPromise
 
-        const result = await pool.request().query(`
-            SELECT
-                id,
-                name,
-                email,
-                created_at
-            FROM users
-        `)
-
-        res.json(result.recordset)
-    } catch (error) {
-        console.error(error)
-
-        res.status(500).json({
-            message: 'Error al consultar usuarios'
-        })
-    }
-})
+// =====================================
+// INICIAR SERVIDOR
+// =====================================
 
 const PORT = process.env.PORT || 5000
 
-app.listen(PORT, () => {
-    console.log(`Servidor ejecutándose en http://localhost:${PORT}`)
-})
+
+async function iniciarServidor() {
+
+    try {
+
+        // Conectar MongoDB
+        await connectMongo()
+
+        // Probar conexión PostgreSQL
+        await testPostgresConnection()
+
+
+        // =================================
+        // INICIAR SCHEDULER DEPORTIVO
+        // =================================
+
+        iniciarSportsScheduler()
+
+
+        // =================================
+        // INICIAR EXPRESS
+        // =================================
+
+        app.listen(PORT, () => {
+
+            console.log(
+                `Servidor ejecutándose en http://localhost:${PORT}`
+            )
+
+        })
+
+
+    } catch (error) {
+
+        console.error(
+            'Error iniciando el backend:',
+            error
+        )
+
+    }
+}
+
+
+iniciarServidor()
