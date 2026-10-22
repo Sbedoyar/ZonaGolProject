@@ -33,3 +33,9 @@ npm-debug.log*
 
 # Credenciales privadas
 backend/secrets/
+# Backups y artefactos temporales de migracion a Azure
+zonagol_mongo_azure.archive
+zonagol_negocio_azure.sql
+zonagol_postgres_azure.dump
+zonagol_postgres_backup.dump
+docker/sqlserver/init/01-zonagol-auth-azure.sql
