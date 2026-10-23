@@ -4,6 +4,7 @@ import {
   obtenerMisApuestas,
 } from '../../services/authService'
 
+import API_URL from '../../config/api'
 
 function MyBets({
   onNotify,
@@ -383,7 +384,7 @@ function MyBets({
 
                             <b>
                               <img
-                                src={`http://localhost:5000/api/postgres/equipos/${seleccion.equipoLocalId}/logo`}
+                                src={`${API_URL}/postgres/equipos/${seleccion.equipoLocalId}/logo`}
                                 alt={`Escudo de ${seleccion.equipoLocal}`}
                               />
                             </b>
@@ -405,7 +406,7 @@ function MyBets({
 
                             <b>
                               <img
-                                src={`http://localhost:5000/api/postgres/equipos/${seleccion.equipoVisitanteId}/logo`}
+                                src={`${API_URL}/postgres/equipos/${seleccion.equipoVisitanteId}/logo`}
                                 alt={`Escudo de ${seleccion.equipoVisitante}`}
                               />
                             </b>
@@ -646,7 +647,7 @@ function MyBets({
 
                         <strong className="my-bet-modal-team">
                           <img
-                            src={`http://localhost:5000/api/postgres/equipos/${seleccion.equipoLocalId}/logo`}
+                            src={`${API_URL}/postgres/equipos/${seleccion.equipoLocalId}/logo`}
                             alt={`Escudo de ${seleccion.equipoLocal}`}
                           />
 
@@ -661,7 +662,7 @@ function MyBets({
 
                         <strong className="my-bet-modal-team my-bet-modal-team--away">
                           <img
-                            src={`http://localhost:5000/api/postgres/equipos/${seleccion.equipoVisitanteId}/logo`}
+                            src={`${API_URL}/postgres/equipos/${seleccion.equipoVisitanteId}/logo`}
                             alt={`Escudo de ${seleccion.equipoVisitante}`}
                           />
 

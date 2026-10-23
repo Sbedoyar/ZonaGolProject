@@ -1,5 +1,5 @@
 import { useState } from 'react'
-
+import API_URL from '../../config/api'
 
 function MatchCard({
   match,
@@ -161,7 +161,7 @@ function MatchCard({
           <div className="match-team">
             <span className="match-team__badge">
               <img
-                src={`http://localhost:5000/api/postgres/equipos/${match.homeId}/logo`}
+                src={`${API_URL}/postgres/equipos/${match.homeId}/logo`}
                 alt={`Escudo de ${match.home}`}
               />
             </span>
@@ -177,7 +177,7 @@ function MatchCard({
           <div className="match-team">
             <span className="match-team__badge">
               <img
-                src={`http://localhost:5000/api/postgres/equipos/${match.awayId}/logo`}
+                src={`${API_URL}/postgres/equipos/${match.awayId}/logo`}
                 alt={`Escudo de ${match.away}`}
               />
             </span>

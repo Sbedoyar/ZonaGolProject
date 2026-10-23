@@ -9,6 +9,8 @@ import {
   obtenerEstadoSincronizacionDeportiva,
 } from "../../services/authService";
 
+import API_URL from '../../config/api'
+
 function AdminPanel({ onNotify }) {
   const [temporadaSeleccionada, setTemporadaSeleccionada] = useState(1);
 
@@ -922,7 +924,7 @@ function AdminPanel({ onNotify }) {
 
                     <span>
                       <img
-                        src={`http://localhost:5000/api/postgres/equipos/${equipoLocalId}/logo`}
+                        src={`${API_URL}/postgres/equipos/${equipoLocalId}/logo`}
                         alt={`Escudo de ${equipoLocal}`}
                       />
                     </span>
@@ -941,7 +943,7 @@ function AdminPanel({ onNotify }) {
 
                     <span>
                       <img
-                        src={`http://localhost:5000/api/postgres/equipos/${equipoVisitanteId}/logo`}
+                        src={`${API_URL}/postgres/equipos/${equipoVisitanteId}/logo`}
                         alt={`Escudo de ${equipoVisitante}`}
                       />
                     </span>

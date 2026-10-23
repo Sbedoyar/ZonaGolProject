@@ -1,3 +1,5 @@
+import API_URL from '../../config/api'
+
 function Hero() {
   return (
     <section
@@ -54,7 +56,7 @@ function Hero() {
         <div className="hero-team">
           <span className="team-crest team-crest--green">
             <img
-              src="http://localhost:5000/api/postgres/equipos/1/logo"
+              src={`${API_URL}/postgres/equipos/1/logo`}
               alt="Escudo de Atlético Nacional"
             />
           </span>
@@ -77,7 +79,7 @@ function Hero() {
         <div className="hero-team">
           <span className="team-crest team-crest--blue">
             <img
-              src="http://localhost:5000/api/postgres/equipos/2/logo"
+              src={`${API_URL}/postgres/equipos/2/logo`}
               alt="Escudo de Millonarios F.C."
             />
           </span>
