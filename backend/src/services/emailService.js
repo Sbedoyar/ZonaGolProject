@@ -419,26 +419,6 @@ Tu pasión, tu juego.
         'Correo de recuperación enviado:'
     )
 
-    console.log(
-        'Destinatario:',
-        destinatario
-    )
-
-    console.log(
-        'Message ID:',
-        resultado.messageId
-    )
-
-    console.log(
-        'Aceptados:',
-        resultado.accepted
-    )
-
-    console.log(
-        'Rechazados:',
-        resultado.rejected
-    )
-
 
     return resultado
 }

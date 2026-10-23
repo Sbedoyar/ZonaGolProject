@@ -6,7 +6,6 @@ const sqlServerRoutes = require('./routes/sqlServerRoutes')
 const googleAuthRoutes = require('./routes/googleAuthRoutes')
 const mysqlRoutes = require('./routes/mysqlRoutes')
 const mongoRoutes = require('./routes/mongoRoutes')
-const firebaseRoutes = require('./routes/firebaseRoutes')
 const postgresRoutes = require('./routes/postgresRoutes')
 const sportsSyncRoutes = require('./routes/sportsSyncRoutes')
 const googleDriveRoutes =  require('./routes/googleDriveRoutes')
@@ -79,9 +78,6 @@ app.use('/api/mysql', mysqlRoutes)
 
 // MONGODB
 app.use('/api/mongo', mongoRoutes)
-
-// FIREBASE / FIRESTORE
-app.use('/api/firebase', firebaseRoutes)
 
 // POSTGRESQL
 app.use('/api/postgres', postgresRoutes)

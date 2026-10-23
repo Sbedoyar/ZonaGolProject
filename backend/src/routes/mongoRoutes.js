@@ -1,93 +1,17 @@
 const express = require('express')
 
+const { verificarToken } = require('../middlewares/authMiddleware')
+
+const {
+    autorizarRoles
+} = require('../middlewares/roleMiddleware')
+
 const {
     getMongoDb
 } = require('../databases/mongoDatabase')
 
 
 const router = express.Router()
-
-
-// ============================================================
-// PRUEBA - CONSULTAR DOCUMENTOS
-// ============================================================
-
-router.get('/prueba', async (req, res) => {
-    try {
-
-        const db = getMongoDb()
-
-        const coleccion =
-            db.collection('pruebas')
-
-        const datos =
-            await coleccion
-                .find()
-                .toArray()
-
-
-        res.json(datos)
-
-    } catch (error) {
-
-        console.error(
-            'Error consultando MongoDB:',
-            error
-        )
-
-
-        res.status(500).json({
-            success: false,
-            mensaje:
-                'Error consultando MongoDB'
-        })
-    }
-})
-
-
-// ============================================================
-// PRUEBA - CREAR DOCUMENTO
-// ============================================================
-
-router.post('/prueba', async (req, res) => {
-    try {
-
-        const db = getMongoDb()
-
-        const coleccion =
-            db.collection('pruebas')
-
-
-        const resultado =
-            await coleccion.insertOne(
-                req.body
-            )
-
-
-        res.status(201).json({
-            success: true,
-            mensaje:
-                'Documento creado correctamente',
-
-            id:
-                resultado.insertedId
-        })
-
-    } catch (error) {
-
-        console.error(
-            'Error creando documento en MongoDB:',
-            error
-        )
-
-
-        res.status(500).json({
-            success: false,
-            mensaje:
-                'Error creando documento en MongoDB'
-        })
-    }
-})
 
 
 // ============================================================
@@ -105,6 +29,8 @@ router.post('/prueba', async (req, res) => {
 
 router.get(
     '/historial-acceso',
+    verificarToken,
+    autorizarRoles(1),
     async (req, res) => {
 
         try {
