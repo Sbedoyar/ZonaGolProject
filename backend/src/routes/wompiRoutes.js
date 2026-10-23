@@ -137,19 +137,28 @@ router.post(
     // REGISTRAR TRAZABILIDAD DEL EVENTO EN FIREBASE
     // ============================================================
 
-    const resultadoFirebase =
-        await registrarEventoPagoWompi({
-            evento,
-            transaccion,
-            resultadoMySQL:
-                resultado
-        })
+    try {
 
+        const resultadoFirebase =
+            await registrarEventoPagoWompi({
+                evento,
+                transaccion,
+                resultadoMySQL:
+                    resultado
+            })
 
-    console.log(
-        'Evento Wompi registrado en Firebase:',
-        resultadoFirebase
-    )
+        console.log(
+            'Evento Wompi registrado en Firebase:',
+            resultadoFirebase
+        )
+
+    } catch (errorFirebase) {
+
+        console.error(
+            'Error registrando trazabilidad Wompi en Firebase:',
+            errorFirebase
+        )
+    }
 
 
       return res
