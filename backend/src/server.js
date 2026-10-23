@@ -35,7 +35,29 @@ const app = express()
 // MIDDLEWARES
 // =====================================
 
-app.use(cors())
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://zonagolproject.sbedor12.workers.dev'
+]
+
+app.use(cors({
+    origin: (origin, callback) => {
+
+        // Permitir solicitudes sin Origin:
+        // Postman, PowerShell, webhooks, comunicación servidor-servidor, etc.
+        if (!origin) {
+            return callback(null, true)
+        }
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true)
+        }
+
+        return callback(
+            new Error('Origen no permitido por CORS')
+        )
+    }
+}))
 app.use(express.json())
 
 
