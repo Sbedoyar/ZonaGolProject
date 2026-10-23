@@ -1425,8 +1425,13 @@ router.post(
                 // CREAR ENLACE DE RECUPERACIÓN
                 // ============================================================
 
+                const frontendUrl = (
+                    process.env.FRONTEND_URL ||
+                    'http://localhost:5173'
+                ).replace(/\/+$/, '')
+
                 const enlaceRecuperacion =
-                    `http://localhost:5173/?token=${encodeURIComponent(token)}`
+                    `${frontendUrl}/?token=${encodeURIComponent(token)}`
 
 
                 // ============================================================
