@@ -108,6 +108,20 @@ app.get('/api/health', (req, res) => {
     })
 })
 
+// =====================================
+// MANEJO GLOBAL DE ERRORES
+// =====================================
+
+app.use((err, req, res, next) => {
+
+    console.error('Error procesando solicitud:', err.message)
+
+    res.status(500).json({
+        success: false,
+        message: 'Error procesando la solicitud'
+    })
+})
+
 
 // =====================================
 // INICIAR SERVIDOR
