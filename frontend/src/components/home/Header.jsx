@@ -32,6 +32,11 @@ function Header({
   ] = useState(false)
 
   const [
+  menuMovilAbierto,
+  setMenuMovilAbierto,
+] = useState(false)
+
+  const [
     recargando,
     setRecargando,
   ] = useState(false)
@@ -476,6 +481,26 @@ function Header({
           </span>
         </button>
 
+        <button
+          className="mobile-menu-button"
+          type="button"
+          aria-label={
+            menuMovilAbierto
+              ? 'Cerrar menú'
+              : 'Abrir menú'
+          }
+          aria-expanded={menuMovilAbierto}
+          onClick={() =>
+            setMenuMovilAbierto(
+              (abierto) => !abierto
+            )
+          }
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
 
         <nav
           className="main-nav"
@@ -557,6 +582,82 @@ function Header({
             Ayuda
           </a>
 
+        </nav>
+
+        <nav
+          className={
+            menuMovilAbierto
+              ? 'mobile-nav open'
+              : 'mobile-nav'
+          }
+          aria-label="Navegación móvil"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              onVerInicio()
+              setMenuMovilAbierto(false)
+            }}
+          >
+            Inicio
+          </button>
+
+          <a
+            href="#partidos"
+            onClick={() => {
+              onVerInicio()
+              setMenuMovilAbierto(false)
+            }}
+          >
+            Partidos
+          </a>
+
+          {esCliente && (
+            <button
+              type="button"
+              onClick={() => {
+                onVerMisApuestas()
+                setMenuMovilAbierto(false)
+              }}
+            >
+              Mis apuestas
+            </button>
+          )}
+
+          {puedeAdministrar && (
+            <button
+              type="button"
+              onClick={() => {
+                onVerAdministracion()
+                setMenuMovilAbierto(false)
+              }}
+            >
+              Administración
+            </button>
+          )}
+
+          {esCliente && (
+            <button
+              type="button"
+              onClick={() => {
+                onNotify?.(
+                  'Próximamente encontrarás aquí las promociones disponibles.'
+                )
+                setMenuMovilAbierto(false)
+              }}
+            >
+              Promociones
+            </button>
+          )}
+
+          <a
+            href="#responsible"
+            onClick={() =>
+              setMenuMovilAbierto(false)
+            }
+          >
+            Ayuda
+          </a>
         </nav>
 
 
